@@ -11,6 +11,7 @@ namespace ClipWeave;
 public sealed class MainWindow : Window {
     readonly GoClient core=new();
     readonly StackPanel body=new(){Spacing=12,Margin=new Thickness(24)};
+    readonly ScrollViewer viewport=new();
     readonly TextBlock state=new(){TextWrapping=TextWrapping.Wrap};
     readonly TextBlock error=new(){TextWrapping=TextWrapping.Wrap,Foreground=new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.IndianRed)};
     readonly ListView history=new();
@@ -29,16 +30,16 @@ public sealed class MainWindow : Window {
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr window,out uint processId);
     readonly Microsoft.UI.Dispatching.DispatcherQueueTimer refreshTimer;
     public MainWindow() {
-        Title="Clipper"; Content=new ScrollViewer{Content=body};
+        Title="Clipper"; viewport.Content=body; Content=viewport;
         AppWindow.Resize(new Windows.Graphics.SizeInt32(660,850));
         refreshTimer=DispatcherQueue.CreateTimer(); refreshTimer.Interval=TimeSpan.FromSeconds(3); refreshTimer.Tick+=async (_,_)=>{if(!busy&&!closed)await Run(Refresh);}; refreshTimer.Start();
         Closed += async (_,_)=>{closed=true;refreshTimer.Stop();ClearPreviews();await core.DisposeAsync();};
         _=Run(Refresh);
     }
     async Task Run(Func<Task> operation) {
-        if(busy||closed) return; busy=true; error.Text=""; body.IsEnabled=false;
+        if(busy||closed) return; busy=true; error.Text=""; viewport.IsEnabled=false;
         try { await operation(); } catch(Exception e) { if(e is BridgeException failure && failure.Payload!=null) { await SaveRecovery(failure.Payload);try {await Refresh();}catch{} } error.Text=L10n.Text(e.Message); }
-        finally {body.IsEnabled=true;busy=false;}
+        finally {viewport.IsEnabled=true;busy=false;}
     }
     Button Button(string title,Func<Task> action) { var button=new Button{Content=title}; button.Click+=async (_,_)=>await Run(action);return button; }
     async Task Action(string name,JsonObject? args=null) {await core.Call(name,args);if(name=="lock")ClearPreviews();await Refresh();}
