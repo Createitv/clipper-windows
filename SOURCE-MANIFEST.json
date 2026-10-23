@@ -67,11 +67,11 @@
     },
     {
       "path": "clients/windows/Localization.cs",
-      "sha256": "464d0945940911953e514ae36a9bc57ad9964c127cd0c9a1c26c5ad565963fe5"
+      "sha256": "bee3605cc78c1f1889bad07eb20d506df0e656622233fa8088a64cfe175060c7"
     },
     {
       "path": "clients/windows/LoginWindow.cs",
-      "sha256": "1b43a249728749232706261a5d2e66f6e2f63800cc528bb76e62b0be297bf00a"
+      "sha256": "37738949de45c3ea7231ec5ecae83db76b3cb3f0096ed8ca8f6a37160e9280c1"
     },
     {
       "path": "clients/windows/MainPanel.cs",
@@ -79,11 +79,11 @@
     },
     {
       "path": "clients/windows/MainWindow.cs",
-      "sha256": "b47be22427e7605fd7a0cd53397d3846bbe5c7fecff88e652c0faf30076857f9"
+      "sha256": "70331a9531df6248507b97cb3d29a1390a60304d05cd13b1a2a5dbcea7e8b69f"
     },
     {
       "path": "clients/windows/SettingsWindow.cs",
-      "sha256": "96bf197d859f24c0f7392ae79106465b221626c9c123acf6baa413e60e2ca0ac"
+      "sha256": "1ee0f2b91f2c564baf719a2771f81f2a16b2095c9e2f6315daa895d507f4c51f"
     },
     {
       "path": "clients/windows/WindowsPreferences.cs",
@@ -95,7 +95,7 @@
     },
     {
       "path": "clients/windows/app.manifest",
-      "sha256": "0c1ef81553304f22ef49285832eba5afc0161a341ea29b9822560bcf9b057805"
+      "sha256": "a8d3a6f0b17fe9fb2f80a7941b77d60ef8ac996458cf43719792938058711300"
     },
     {
       "path": "clients/windows/build.ps1",

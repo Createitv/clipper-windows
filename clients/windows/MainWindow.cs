@@ -99,6 +99,7 @@ public sealed partial class MainWindow : Window {
         clips=AccountReady ? (await core.Call("list") as JsonArray ?? new()).OfType<JsonObject>().ToList() : new();
         if(body.Children.Count==0||wasUnlocked!=AccountReady||renderedGroups!=(status["groups"]?.ToJsonString()??"")) Render();
         else { UpdateSyncIndicator(); if(AppWindow.IsVisible)RenderHistory(); }
+        if(wasUnlocked&&!AccountReady){settingsWindow?.Close();ShowLogin();}
         StateChanged?.Invoke();
     }
     internal async Task<ContentDialogResult> Dialog(string title,UIElement content,string primary) {
@@ -141,10 +142,10 @@ public sealed partial class MainWindow : Window {
     internal Task ShowDevices()=>Devices();
     async Task Authorization() {
         pairing=status["pendingPairing"] as JsonObject ?? pairing;
-        var panel=new StackPanel{Spacing=10};
+        var panel=new StackPanel{Spacing=10};var authNotice=new TextBlock{TextWrapping=TextWrapping.Wrap};panel.Children.Add(authNotice);
         var code=new TextBox{Header=L10n.Text("12 位授权码"),PlaceholderText="ABCD-2345-WXYZ"};
-        var import=new Button{Content=L10n.Text("导入恢复文件…")};import.Click+=async(_,_)=>{try {var picker=new FileOpenPicker();picker.FileTypeFilter.Add(".json");InitializeWithWindow.Initialize(picker,WindowNative.GetWindowHandle(DialogOwner));var file=await picker.PickSingleFileAsync();if(file!=null){var text=await Windows.Storage.FileIO.ReadTextAsync(file);await core.Call("importRecovery",new(){["text"]=text,["passphrase"]=DeviceSecret.GetOrCreate()});await Refresh();}}catch(Exception e){error.Text=L10n.Text(e.Message);}};panel.Children.Add(import);
-        var export=new Button{Content=L10n.Text("导出恢复文件…")};export.Click+=async(_,_)=>{try{await SaveRecovery(await core.Call("exportRecovery",new(){["passphrase"]=DeviceSecret.GetOrCreate()}) as JsonObject);}catch(Exception e){error.Text=L10n.Text(e.Message);}};panel.Children.Add(export);
+        var import=new Button{Content=L10n.Text("导入恢复文件…")};import.Click+=async(_,_)=>{try {var picker=new FileOpenPicker();picker.FileTypeFilter.Add(".json");InitializeWithWindow.Initialize(picker,WindowNative.GetWindowHandle(DialogOwner));var file=await picker.PickSingleFileAsync();if(file!=null){var text=await Windows.Storage.FileIO.ReadTextAsync(file);await core.Call("importRecovery",new(){["text"]=text,["passphrase"]=DeviceSecret.GetOrCreate()});await Refresh();}}catch(Exception e){authNotice.Text=L10n.Text(e.Message);}};panel.Children.Add(import);
+        var export=new Button{Content=L10n.Text("导出恢复文件…")};export.Click+=async(_,_)=>{try{await SaveRecovery(await core.Call("exportRecovery",new(){["passphrase"]=DeviceSecret.GetOrCreate()}) as JsonObject);}catch(Exception e){authNotice.Text=L10n.Text(e.Message);}};panel.Children.Add(export);
         if(pairing!=null) {
             await WaitForAuthorization(panel);
             return;
@@ -157,7 +158,7 @@ public sealed partial class MainWindow : Window {
         scan.Click+=(_,_)=>{scanning=true;authorization.Hide();};
         if(status["unlocked"]?.GetValue<bool>()==true) {
             var data=await core.Call("pairingGrants");var grants=data as JsonArray ?? (data as JsonObject)?["requests"] as JsonArray ?? new();
-            foreach(var grant in grants.OfType<JsonObject>()) {var id=Str(grant,"id");var cancel=new Button{Content=L10n.Text("取消浏览器授权 ")+id};cancel.Click+=async(_,_)=>{try{await core.Call("cancelGrant",new(){["deviceId"]=id});cancel.IsEnabled=false;}catch(Exception e){error.Text=L10n.Text(e.Message);}};panel.Children.Add(cancel);}
+            foreach(var grant in grants.OfType<JsonObject>()) {var id=Str(grant,"id");var cancel=new Button{Content=L10n.Text("取消浏览器授权 ")+id};cancel.Click+=async(_,_)=>{try{await core.Call("cancelGrant",new(){["deviceId"]=id});cancel.IsEnabled=false;}catch(Exception e){authNotice.Text=L10n.Text(e.Message);}};panel.Children.Add(cancel);}
         }
         var choice=await authorization.ShowAsync();
         if(scanning) {
@@ -219,10 +220,10 @@ public sealed partial class MainWindow : Window {
     }
     async Task Devices() {
         var data=await core.Call("devices");var devices=data as JsonArray ?? (data as JsonObject)?["devices"] as JsonArray ?? new();
-        var panel=new StackPanel{Spacing=8}; var revokePass=new PasswordBox{PlaceholderText=L10n.Text("原资料库口令（旧版凭据缺失时）")}; if(DeviceSecret.Read()==null)panel.Children.Add(revokePass);
+        var panel=new StackPanel{Spacing=8};var notice=new TextBlock{TextWrapping=TextWrapping.Wrap};panel.Children.Add(notice); var revokePass=new PasswordBox{PlaceholderText=L10n.Text("原资料库口令（旧版凭据缺失时）")}; if(DeviceSecret.Read()==null)panel.Children.Add(revokePass);
         foreach(var device in devices.OfType<JsonObject>()) {
             panel.Children.Add(new TextBlock{Text=Str(device,"name",Str(device,"id"))});
-            bool confirming=false;var cancelRevoke=new Button{Content=L10n.Text("取消撤销"),Visibility=Visibility.Collapsed};var revoke=new Button{Content=L10n.Text("撤销设备"),IsEnabled=device["current"]?.GetValue<bool>()!=true&&device["revoked"]?.GetValue<bool>()!=true};revoke.Click+=async (_,_)=>{revoke.IsEnabled=false;try{ if(!confirming){confirming=true;revoke.Content=L10n.Text("确认撤销：已解密内容无法远程抹除");cancelRevoke.Visibility=Visibility.Visible;revoke.IsEnabled=true;return;} var value=DeviceSecret.Read() ?? revokePass.Password;if(string.IsNullOrEmpty(value))throw new IOException(L10n.Text("请输入原资料库口令"));await core.Call("revoke",new(){["deviceId"]=Str(device,"id"),["passphrase"]=value});revokePass.Password="";cancelRevoke.Visibility=Visibility.Collapsed;}catch(Exception e){error.Text=L10n.Text(e.Message);revoke.IsEnabled=true;}};cancelRevoke.Click+=(_,_)=>{confirming=false;revoke.Content=L10n.Text("撤销设备");cancelRevoke.Visibility=Visibility.Collapsed;revokePass.Password="";};panel.Children.Add(revoke);panel.Children.Add(cancelRevoke);
+            bool confirming=false;var cancelRevoke=new Button{Content=L10n.Text("取消撤销"),Visibility=Visibility.Collapsed};var revoke=new Button{Content=L10n.Text("撤销设备"),IsEnabled=device["current"]?.GetValue<bool>()!=true&&device["revoked"]?.GetValue<bool>()!=true};revoke.Click+=async (_,_)=>{revoke.IsEnabled=false;try{ if(!confirming){confirming=true;revoke.Content=L10n.Text("确认撤销：已解密内容无法远程抹除");cancelRevoke.Visibility=Visibility.Visible;revoke.IsEnabled=true;return;} var value=DeviceSecret.Read() ?? revokePass.Password;if(string.IsNullOrEmpty(value))throw new IOException(L10n.Text("请输入原资料库口令"));await core.Call("revoke",new(){["deviceId"]=Str(device,"id"),["passphrase"]=value});revokePass.Password="";cancelRevoke.Visibility=Visibility.Collapsed;}catch(Exception e){notice.Text=L10n.Text(e.Message);revoke.IsEnabled=true;}};cancelRevoke.Click+=(_,_)=>{confirming=false;revoke.Content=L10n.Text("撤销设备");cancelRevoke.Visibility=Visibility.Collapsed;revokePass.Password="";};panel.Children.Add(revoke);panel.Children.Add(cancelRevoke);
         }
         await Dialog(L10n.Text("设备"),panel,L10n.Text("完成"));await Refresh();
     }
