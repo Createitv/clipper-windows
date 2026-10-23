@@ -32,8 +32,11 @@ public sealed partial class MainWindow {
     readonly SemaphoreSlim thumbnailWork=new(1,1);
     int thumbnailEpoch;
     readonly Dictionary<string,WeakReference<Image>> thumbnailTargets=new();
-    readonly ProgressRing syncProgress=CreateSyncProgress();
-    static ProgressRing CreateSyncProgress(){UiDiagnostics.Stage("before-sync-progress-control");var result=new ProgressRing{Width=24,Height=24,IsActive=false,Visibility=Visibility.Collapsed};UiDiagnostics.Stage("after-sync-progress-control");return result;}
+    readonly FontIcon syncGlyph=new(){Glyph="\uE72C",FontSize=16,Foreground=Palette.Blue};
+    readonly RotateTransform syncRotation=new();
+    readonly Storyboard syncStoryboard=new();
+    bool syncAnimationRunning;
+
     string renderedGroups="";
     string historySignature="";
     string selectedClipId="";
@@ -52,9 +55,10 @@ public sealed partial class MainWindow {
         search.Visibility=searchVisible?Visibility.Visible:Visibility.Collapsed;search.MinWidth=100;search.MaxWidth=380;search.HorizontalAlignment=HorizontalAlignment.Stretch;search.Width=double.NaN;search.CornerRadius=new CornerRadius(11);search.Background=Palette.Soft;search.BorderThickness=new Thickness(0);search.Padding=new Thickness(12,9,12,9);search.Margin=new Thickness(12,0,0,0);
         search.TextChanged-=FilterChanged;search.TextChanged+=FilterChanged;Grid.SetColumn(search,2);toolbar.Children.Add(search);
         var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=5};Grid.SetColumn(actions,3);toolbar.Children.Add(actions);
-        Detach(syncProgress);actions.Children.Add(syncProgress);
+        Detach(syncGlyph);syncGlyph.RenderTransform=syncRotation;syncGlyph.RenderTransformOrigin=new Windows.Foundation.Point(.5,.5);
+        if(syncStoryboard.Children.Count==0){var animation=new DoubleAnimation{From=0,To=360,Duration=new Duration(TimeSpan.FromSeconds(1)),RepeatBehavior=RepeatBehavior.Forever,EnableDependentAnimation=true};Storyboard.SetTarget(animation,syncRotation);Storyboard.SetTargetProperty(animation,"Angle");syncStoryboard.Children.Add(animation);}
         actions.Children.Add(Palette.Icon("\uE721","搜索",ToggleSearch));
-        var sync=Palette.Icon("\uE72C","立即同步",()=>_=Run(SyncNow));sync.IsEnabled=AccountReady;actions.Children.Add(sync);
+        var sync=Palette.Icon("\uE72C","立即同步",()=>_=Run(SyncNow));sync.Content=syncGlyph;sync.IsEnabled=AccountReady;actions.Children.Add(sync);
         var pin=Palette.Icon("\uE718","固定工具栏",()=>{});pin.Click+=(_,_)=>{Preferences.Pinned=!Preferences.Pinned;Preferences.Save();pin.Foreground=Palette.Blue;pin.Background=Preferences.Pinned?Palette.Soft:Palette.White;};pin.Foreground=Palette.Blue;pin.Background=Preferences.Pinned?Palette.Soft:Palette.White;actions.Children.Add(pin);
         var add=Palette.Icon("\uE710","添加",()=>{});var menu=new MenuFlyout();
         MenuItem(menu,"添加文字…",()=>_=Run(AddText));MenuItem(menu,"导入文件…",()=>_=Run(ImportFile));MenuItem(menu,"导入文件夹…",()=>_=Run(ImportFolder));menu.Items.Add(new MenuFlyoutSeparator());
@@ -156,7 +160,7 @@ public sealed partial class MainWindow {
     void GroupButton(string title,string value,bool translate=true){var label=Palette.Text(translate?L10n.Text(title):title,13,activeGroup==value);label.Foreground=activeGroup==value?Palette.Blue:Palette.Muted;var b=new Button{Content=new Border{Child=label,Padding=new Thickness(12,13,12,13),BorderBrush=activeGroup==value?Palette.Blue:Palette.White,BorderThickness=new Thickness(0,0,0,2)},Background=Palette.White,BorderThickness=new Thickness(0),Padding=new Thickness(0)};b.Click+=(_,_)=>{activeGroup=value;UpdateGroups();RenderHistory(true);};groupStrip.Children.Add(b);}
     FrameworkElement EmptyState(bool locked){var p=new StackPanel{Spacing=12,VerticalAlignment=VerticalAlignment.Center,HorizontalAlignment=HorizontalAlignment.Center,MaxWidth=400};p.Children.Add(Palette.Text(L10n.Text(locked?"你的剪贴板已安全锁定":search.Text.Length>0||activeGroup.Length>0?"没有找到匹配记录":"留住每一次灵感"),20,true));p.Children.Add(Palette.Text(L10n.Text(locked?"解锁后查看记录并继续同步":"开启采集后复制一段文字，或从这里添加内容。")));p.Children.Add(Button(L10n.Text(locked?"登录 Clipper":"添加文字"),locked?Connect:AddText));return p;}
     void FilterChanged(object sender,TextChangedEventArgs args)=>RenderHistory(true);
-    void UpdateSyncIndicator(){if(DateTime.UtcNow>=noticeUntil)state.Text=L10n.Text(Str(status,"status",L10n.Text("等待云端连接")));syncLabel.Text=state.Text;syncProgress.IsActive=syncing||status["status"]?.ToString()=="正在同步";syncProgress.Visibility=syncProgress.IsActive?Visibility.Visible:Visibility.Collapsed;}
+    void UpdateSyncIndicator(){if(DateTime.UtcNow>=noticeUntil)state.Text=L10n.Text(Str(status,"status",L10n.Text("等待云端连接")));syncLabel.Text=state.Text;var active=syncing||status["status"]?.ToString()=="正在同步";if(active&&!syncAnimationRunning)syncStoryboard.Begin();else if(!active&&syncAnimationRunning)syncStoryboard.Stop();syncAnimationRunning=active;}
     void PanelKeyDown(object sender,KeyRoutedEventArgs e) {
         if(e.Key==VirtualKey.Escape){if(previewWindow!=null)previewWindow.Close();else if(search.Visibility==Visibility.Visible)ToggleSearch();else Shell.HidePanel(true);e.Handled=true;return;}
         if(WindowsShell.ControlDown&&e.Key>=VirtualKey.Number1&&e.Key<=VirtualKey.Number9){var i=(int)e.Key-(int)VirtualKey.Number1;if(i<visibleClips.Count)_=Run(()=>CopyClip(visibleClips[i]));e.Handled=true;return;}

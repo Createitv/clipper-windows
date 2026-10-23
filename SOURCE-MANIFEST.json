@@ -103,7 +103,7 @@
     },
     {
       "path": "clients/windows/MainPanel.cs",
-      "sha256": "a052689bef6a5e9c51ccf77e36e5753ba1c1ba4ac94992177a191c6278ab1d4c"
+      "sha256": "c1f96771de5302c226a1e384efac84a7a985f65bbbe725f83cfd77942aa96c71"
     },
     {
       "path": "clients/windows/MainWindow.cs",
@@ -147,7 +147,7 @@
     },
     {
       "path": "clients/windows/ci-build.ps1",
-      "sha256": "8c1df8749a7125fcb3edfcb94d149f89ac42f30785049f25c35a4f1258180061"
+      "sha256": "785e89c8b358f169a3c61db424c112edc69bf10271f31ebcaa6d450fcb9decc7"
     },
     {
       "path": "clients/windows/ui-check.ps1",

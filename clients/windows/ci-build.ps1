@@ -70,8 +70,18 @@ if($Architecture -eq 'x64') {
 
 # Run real settings activation/navigation and resident-lifetime checks in a fresh hosted profile.
 if($Architecture -eq 'x64') {
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'ui-check.ps1') -Executable (Join-Path $publish 'Clipper.exe') -OutputDirectory (Join-Path $artifacts 'ui-checks')
-    if($LASTEXITCODE -ne 0){throw 'Settings UI and lifetime checks failed'}
+    $uiDirectory=Join-Path $artifacts 'ui-checks';New-Item -ItemType Directory -Force $uiDirectory | Out-Null
+    $uiStart=[Diagnostics.ProcessStartInfo]::new('powershell.exe');$uiStart.UseShellExecute=$false;$uiStart.RedirectStandardOutput=$true;$uiStart.RedirectStandardError=$true
+    foreach($argument in @('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $PSScriptRoot 'ui-check.ps1'),'-Executable',(Join-Path $publish 'Clipper.exe'),'-OutputDirectory',$uiDirectory)){$uiStart.ArgumentList.Add($argument)}
+    $ui=[Diagnostics.Process]::Start($uiStart);$uiOut=$ui.StandardOutput.ReadToEndAsync();$uiErr=$ui.StandardError.ReadToEndAsync()
+    $uiTimedOut=-not $ui.WaitForExit(120000)
+    if($uiTimedOut){$ui.Kill($true);$ui.WaitForExit()}
+    $uiOutput=$uiOut.GetAwaiter().GetResult();$uiErrors=$uiErr.GetAwaiter().GetResult();Write-Output $uiOutput;Write-Output $uiErrors
+    $uiOutput | Set-Content (Join-Path $uiDirectory 'stdout.log') -Encoding utf8;$uiErrors | Set-Content (Join-Path $uiDirectory 'stderr.log') -Encoding utf8
+    foreach($name in @('ui-startup.log','ui-errors.log')){$diagnostic=Join-Path $env:LOCALAPPDATA "ClipWeave/$name";if(Test-Path $diagnostic){Copy-Item $diagnostic (Join-Path $uiDirectory $name) -Force}}
+    $uiExit=$ui.ExitCode;$ui.Dispose()
+    if($uiTimedOut){throw 'Settings UI checks timed out; diagnostic artifacts retained'}
+    if($uiExit -ne 0){throw 'Settings UI and lifetime checks failed'}
 }
 
 @"
