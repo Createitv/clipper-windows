@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [x64, ARM64]
+        architecture: [x64]
     defaults:
       run:
         shell: pwsh

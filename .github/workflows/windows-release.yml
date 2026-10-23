@@ -1,0 +1,101 @@
+name: Release Clipper Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Package Clipper Windows run ID
+        required: true
+        default: '39899945048'
+      tag:
+        description: New preview release tag
+        required: true
+        default: windows-v0.1.0-preview.1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      BUILD_RUN_ID: ${{ inputs.run_id }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Validate successful Windows build
+        id: source
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          run_id = os.environ['BUILD_RUN_ID']
+          tag = os.environ['RELEASE_TAG']
+          assert re.fullmatch(r'[0-9]+', run_id), 'Invalid run ID'
+          assert re.fullmatch(r'windows-v[0-9]+\.[0-9]+\.[0-9]+-preview\.[0-9]+', tag), 'Invalid preview tag'
+          repo = os.environ['GH_REPO']
+          run = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/actions/runs/{run_id}']))
+          assert run['status'] == 'completed' and run['conclusion'] == 'success', 'Build must succeed'
+          assert run['path'] == '.github/workflows/windows-package.yml', 'Unexpected source workflow'
+          assert run['head_repository']['full_name'] == repo, 'Unexpected source repository'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('sha=' + run['head_sha'] + '\n')
+          PY
+      - name: Download x64 build
+        shell: bash
+        run: gh run download "$BUILD_RUN_ID" --repo "$GH_REPO" --name Clipper-Windows-x64 --dir "$RUNNER_TEMP/windows-release"
+      - name: Verify archive and checksums
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, os, struct, zipfile
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'windows-release'
+          archive = root / 'Clipper-Windows-x64.zip'
+          expected = (root / 'Clipper-Windows-x64.zip.sha256').read_text(encoding='utf-8-sig').split()[0]
+          assert hashlib.sha256(archive.read_bytes()).hexdigest() == expected, 'ZIP checksum mismatch'
+          with zipfile.ZipFile(archive) as zipped:
+              assert zipped.testzip() is None, 'ZIP CRC error'
+              assert len(zipped.namelist()) == len(set(zipped.namelist())), 'Duplicate ZIP entries'
+              hashes = zipped.read('SHA256SUMS.txt').decode('utf-8-sig').splitlines()
+              checked = set()
+              for line in hashes:
+                  digest, name = line.split('  ', 1)
+                  assert hashlib.sha256(zipped.read(name)).hexdigest() == digest, name
+                  checked.add(name)
+              files = {entry.filename for entry in zipped.infolist() if not entry.is_dir()}
+              assert checked == files - {'SHA256SUMS.txt'}, 'Incomplete file checksum list'
+              for name in ('ClipWeave.exe', 'clipweave-core.exe'):
+                  data = zipped.read(name)
+                  offset = struct.unpack_from('<I', data, 0x3c)[0]
+                  assert data[offset:offset+4] == b'PE\0\0', name
+                  assert struct.unpack_from('<H', data, offset+4)[0] == 0x8664, name + ' must be x64'
+              assert 'Microsoft.UI.Xaml.dll' in files, 'WinUI runtime missing'
+              print(f'Verified x64 ZIP: {len(files)} files, all SHA-256 checks passed')
+          notes = root / 'release-notes.md'
+          notes.write_text('''Windows x64 预览版，适用于 Intel / AMD 64 位 Windows 电脑。
+
+          下载 **Clipper-Windows-x64.zip**，完整解压后运行 **ClipWeave.exe**。请保留同目录中的 clipweave-core.exe 和所有 DLL，无需安装 Go 或 .NET 开发工具。
+
+          本版本为未签名的便携开发预览包。已通过 GitHub Actions 构建及 x64 Go 核心通信检查，尚未完成真实 Windows 图形界面和跨设备同步验收。此下载不是 ARM 原生版本。
+
+          附带 .sha256 文件，可用于校验 ZIP。发布流程已验证 ZIP 和内部每个文件的 SHA-256。
+          ''', encoding='utf-8')
+          PY
+      - name: Publish preview release
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        shell: bash
+        run: |
+          gh release create "$RELEASE_TAG" --repo "$GH_REPO" --target "$SOURCE_SHA" --draft --prerelease --title 'Clipper Windows 预览版' --notes-file "$RUNNER_TEMP/windows-release/release-notes.md"
+          gh release upload "$RELEASE_TAG" --repo "$GH_REPO" "$RUNNER_TEMP/windows-release/Clipper-Windows-x64.zip" "$RUNNER_TEMP/windows-release/Clipper-Windows-x64.zip.sha256"
+          gh release edit "$RELEASE_TAG" --repo "$GH_REPO" --draft=false

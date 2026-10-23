@@ -8,19 +8,18 @@ No original repository Git history is included. See SOURCE-MANIFEST.json.
 
 ## Download a development build
 
-Open **Actions → Package Clipper Windows → the latest successful run → Artifacts**.
-Download Clipper-Windows-x64 for Intel/AMD Windows, or Clipper-Windows-ARM64 for
-Windows on ARM. The artifact contains a ZIP and its SHA-256 checksum. Extract
+Open **Releases** and download **Clipper-Windows-x64.zip** for Intel/AMD Windows.
+Only one Windows architecture is published. Its SHA-256 checksum is also available.
+Development artifacts are also available under Actions. Extract
 the complete application ZIP, then run **ClipWeave.exe**. Keep its Go helper and
 all DLLs in the same directory. These are unsigned development builds, not a
-signed installer or Microsoft Store release. ARM64 is cross-built on an x64
-runner, not runtime-tested there. Builds alone do not prove clipboard/system
+signed installer or Microsoft Store release. This is not a native ARM64 build. Builds alone do not prove clipboard/system
 integration or cross-device synchronization works on physical devices.
 
 ## Build with GitHub Actions
 
 The workflow runs on pushes to main affecting Windows build inputs, or can be
-started with **Run workflow**. It builds x64 and ARM64 using Windows 2022, Go
+started with **Run workflow**. It builds x64 using Windows 2022, Go
 from native/go.mod and .NET 8. It publishes self-contained WinUI binaries and
 runs a real JSON-pipe smoke check of the x64 Go helper with an isolated empty
 vault. No production secrets, account sign-in or cloud credentials are needed.
