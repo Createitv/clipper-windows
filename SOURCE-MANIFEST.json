@@ -35,7 +35,7 @@
     },
     {
       "path": "clients/windows/App.xaml.cs",
-      "sha256": "250585f3beab9bcf3d8750fe51068115a15a6e38e2c3e347db33a5e3b49f9b38"
+      "sha256": "f7b8fb33516363b76bab9fcb56d5926d426ef9e907103db7f05c190c0780b58b"
     },
     {
       "path": "clients/windows/AuthorizationCode.cs",
@@ -151,7 +151,7 @@
     },
     {
       "path": "clients/windows/ui-check.ps1",
-      "sha256": "8c3a81e95486853b618e63a5bfb7ad0f45c0de2eecde7170e1dcfd10dae9aff1"
+      "sha256": "14c57f9ee7be85e920e33f355fe08909d8ef79e37a4f406008756ade4717e463"
     },
     {
       "path": "clients/windows-tests/LocalizationTests.csproj",
