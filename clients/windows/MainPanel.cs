@@ -31,6 +31,7 @@ public sealed partial class MainWindow {
     List<JsonObject> visibleClips=[];
     bool historyConfigured;
     void Render() {
+        Detach(search);Detach(groupStrip);Detach(history);Detach(state);
         body.Children.Clear();body.RowDefinitions.Clear();
         foreach(var height in new[]{GridLength.Auto,GridLength.Auto,new GridLength(1,GridUnitType.Star),GridLength.Auto})body.RowDefinitions.Add(new RowDefinition{Height=height});
         var toolbar=new Grid{Padding=new Thickness(22,14,22,14),ColumnSpacing=12};
@@ -68,6 +69,7 @@ public sealed partial class MainWindow {
         body.KeyDown-=PanelKeyDown;body.KeyDown+=PanelKeyDown;
         historySignature="";RenderHistory();UpdateSyncIndicator();
     }
+    static void Detach(FrameworkElement element){if(element.Parent is Panel panel)panel.Children.Remove(element);else if(element.Parent is ScrollViewer scroll)scroll.Content=null;else if(element.Parent is ContentControl host)host.Content=null;}
     void ConfigureHistory() {
         if(historyConfigured)return;historyConfigured=true;
         history.SelectionMode=ListViewSelectionMode.Single;history.IsItemClickEnabled=true;history.Background=Palette.White;
@@ -75,7 +77,7 @@ public sealed partial class MainWindow {
         history.ItemTemplate=(DataTemplate)XamlReader.Load("<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'><Border Width='226' Margin='6,0,6,0'/></DataTemplate>");
         history.ItemContainerStyle=new Style(typeof(ListViewItem));history.ItemContainerStyle.Setters.Add(new Setter(Control.PaddingProperty,new Thickness(0)));history.ItemContainerStyle.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty,HorizontalAlignment.Stretch));
         ScrollViewer.SetHorizontalScrollBarVisibility(history,ScrollBarVisibility.Hidden);ScrollViewer.SetVerticalScrollBarVisibility(history,ScrollBarVisibility.Disabled);
-        history.ContainerContentChanging+=(_,e)=>{if(!e.InRecycleQueue&&e.Item is JsonObject clip&&e.ItemContainer.ContentTemplateRoot is Border root){root.Child=Card(clip);}};
+        history.ContainerContentChanging+=(_,e)=>{if(e.InRecycleQueue)return;if(e.ItemContainer.ContentTemplateRoot is Border root&&e.Item is JsonObject clip){root.Child=Card(clip);}else e.RegisterUpdateCallback((_,next)=>{if(!next.InRecycleQueue&&next.Item is JsonObject value&&next.ItemContainer.ContentTemplateRoot is Border border)border.Child=Card(value);});};
         history.SelectionChanged+=(_,_)=>{if(history.SelectedItem is JsonObject clip)selectedClipId=Str(clip,"id");};
         history.DoubleTapped+=(_,_)=>{if(history.SelectedItem is JsonObject clip)_=Run(()=>CopyClip(clip));};
     }

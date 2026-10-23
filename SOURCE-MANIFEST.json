@@ -10,6 +10,14 @@
       "sha256": "897586c2ec9f45542775ac9145af9c5219b3184c41e2f000f489e7c8104a081d"
     },
     {
+      "path": "assets/brand/LoginArtwork.png",
+      "sha256": "16c0c0d7abaaee37397e28c37bc8bcb0473693101b3dfa6d359f1cdd43497443"
+    },
+    {
+      "path": "assets/brand/cliper-icon-1024.png",
+      "sha256": "048b37796b741885406ef720a8b3636d29b243e5569039f270b4ec82f05136e7"
+    },
+    {
       "path": "assets/brand/menu/cliper-tray-black.ico",
       "sha256": "fc94fdc4b98428e78384e6163bc7cb15d8acf9dbed994a3fc882bcb3066072b2"
     },
@@ -19,11 +27,11 @@
     },
     {
       "path": "clients/windows/App.xaml",
-      "sha256": "b862bb394f8d40c26e0a21653872008f0242c2c0723920e1e5e81a7bae4ad646"
+      "sha256": "1f5bdb7e1b228505978f738b83df8fdd83031c2311178943d1f96d73a05e1fb6"
     },
     {
       "path": "clients/windows/App.xaml.cs",
-      "sha256": "189d8acbc9c38b5f3ddf16627ec72896770dfdafb695ba9c18437b854ae541b4"
+      "sha256": "4e7f4f5a8c3aa5f2e5125f05ade3496ae6b64cf0e70199ac0804610f195153be"
     },
     {
       "path": "clients/windows/AuthorizationCode.cs",
@@ -34,8 +42,20 @@
       "sha256": "15229349177bf52dc08f32dc37a26eb11ea35ef63e36ba0001df71368308a780"
     },
     {
+      "path": "clients/windows/ClipActions.cs",
+      "sha256": "951d3c5f0269aeb601c84e90dc8f80a932fcfd8f62bf6d4e616b416655dad394"
+    },
+    {
+      "path": "clients/windows/ClipPresentation.cs",
+      "sha256": "84554a71050d05c06a00664d38594cfca08215c9ff19d70e2636461aad55e536"
+    },
+    {
       "path": "clients/windows/ClipWeave.csproj",
-      "sha256": "407c8674ac37502856c363083f4135a5a939aafc1b804b96f217d0f1f54d26e8"
+      "sha256": "bd072d0e5d2b5ee3c813cd1a85d25e56867a11dbcca00a27ad46af74ab64f006"
+    },
+    {
+      "path": "clients/windows/ClipboardAdapter.cs",
+      "sha256": "2c94a42844f3653629290dd29698fcea8c888004932d29b16ff9db9c46864e52"
     },
     {
       "path": "clients/windows/DeviceSecret.cs",
@@ -47,11 +67,31 @@
     },
     {
       "path": "clients/windows/Localization.cs",
-      "sha256": "c3b6a132ca204c15bc609df8921b1dead8f2440eed7d9ba91d96a15427841dfc"
+      "sha256": "464d0945940911953e514ae36a9bc57ad9964c127cd0c9a1c26c5ad565963fe5"
+    },
+    {
+      "path": "clients/windows/LoginWindow.cs",
+      "sha256": "9b36d1118d749b8626158f40b224f12eec2c4709cbe46c6e841b4609f8e25027"
+    },
+    {
+      "path": "clients/windows/MainPanel.cs",
+      "sha256": "07e3989ba200bdd97cf885a88555a443e35793da4cc25012174f9953df7f6323"
     },
     {
       "path": "clients/windows/MainWindow.cs",
-      "sha256": "4f899fd7ec0532dcaed5602f8c7ed2b8906e8ab1dcb17e7f9e3dbc87a3ceecbe"
+      "sha256": "049056ce445d5b54f941e994694c046a0cc75fd045b68a161c6a21b892769b6c"
+    },
+    {
+      "path": "clients/windows/SettingsWindow.cs",
+      "sha256": "e8ab70b9a9430eaf8def00c07366804f7c31d0212ebc71f3d83c66c378a76689"
+    },
+    {
+      "path": "clients/windows/WindowsPreferences.cs",
+      "sha256": "27230867820b1ff03dfb8da0a59ebab2cdc79f23286ff465d9fcc4d55aef8c79"
+    },
+    {
+      "path": "clients/windows/WindowsShell.cs",
+      "sha256": "b1fc62b41375867de522f193c8879184cf3ac1a3674819fb2d8f859a58c71314"
     },
     {
       "path": "clients/windows/app.manifest",
@@ -67,11 +107,11 @@
     },
     {
       "path": "clients/windows-tests/LocalizationTests.csproj",
-      "sha256": "cd6d636cb855ff45b59d34e7c002070c9eda548e67c48f4da04dacbbb4347b57"
+      "sha256": "f6e01bc459b74ecc94d8a95e4b766896fa186d3874eb050d7b0a1739f85ee041"
     },
     {
       "path": "clients/windows-tests/Program.cs",
-      "sha256": "0f7db86b5e468930e4d7cc080530e7e65bb4b191300dc6858a86d773df462cc4"
+      "sha256": "a25dd72daf3109848db2e47f216111ec6de35281da67c16e2d7921ba1b177512"
     },
     {
       "path": "native/bridge/client.go",
@@ -107,7 +147,7 @@
     },
     {
       "path": "native/core/operations.go",
-      "sha256": "b96de9cff64e56b6a381bece1b9a15bd9d8d8204eeaa853d79eb8f9c68d53a48"
+      "sha256": "f2218086de6d6ecc397a3b07e6f9bbcf84a563166a69a62b05ea619b30370233"
     },
     {
       "path": "native/core/profiles.go",
@@ -147,7 +187,7 @@
     },
     {
       "path": "native/sync/engine.go",
-      "sha256": "03140b1e3a2a48d5258cfc71dd43793d3d73cfdf2e6fef8a93be773c165dbfb3"
+      "sha256": "7092223fb4b7aaf2b8ec8e39ca8bf474c3fe7cf3e6cd549dbefc020db3521ac1"
     },
     {
       "path": "native/sync/pairing.go",
