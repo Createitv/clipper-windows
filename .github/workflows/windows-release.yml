@@ -47,6 +47,8 @@ jobs:
           assert run['status'] == 'completed' and run['conclusion'] == 'success', 'Build must succeed'
           assert run['path'] == '.github/workflows/windows-package.yml', 'Unexpected source workflow'
           assert run['head_repository']['full_name'] == repo, 'Unexpected source repository'
+          ref = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/git/ref/tags/{tag}']))
+          assert ref['object']['type'] == 'commit' and ref['object']['sha'] == run['head_sha'], 'Tag must point to the verified build commit'
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('sha=' + run['head_sha'] + '\n')
           PY
@@ -98,6 +100,6 @@ jobs:
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
         shell: bash
         run: |
-          gh release create "$RELEASE_TAG" --repo "$GH_REPO" --target "$SOURCE_SHA" --draft --prerelease --title 'Clipper Windows 预览版' --notes-file "$RUNNER_TEMP/windows-release/release-notes.md"
+          gh release create "$RELEASE_TAG" --repo "$GH_REPO" --verify-tag --draft --prerelease --title 'Clipper Windows 预览版' --notes-file "$RUNNER_TEMP/windows-release/release-notes.md"
           gh release upload "$RELEASE_TAG" --repo "$GH_REPO" "$RUNNER_TEMP/windows-release/Clipper-Windows-x64.zip" "$RUNNER_TEMP/windows-release/Clipper-Windows-x64.zip.sha256"
           gh release edit "$RELEASE_TAG" --repo "$GH_REPO" --draft=false
