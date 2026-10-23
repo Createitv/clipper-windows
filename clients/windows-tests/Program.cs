@@ -56,13 +56,27 @@ ClipWeave.HistoryUpdates.Apply(snapshots,new[]{inserted,revised,second});
 if(changes.Count!=1||changes[0]!=System.Collections.Specialized.NotifyCollectionChangedAction.Replace)throw new Exception("A changed clip must replace only its own card");
 changes.Clear();ClipWeave.HistoryUpdates.Apply(snapshots,new[]{second,revised});
 if(changes.Contains(System.Collections.Specialized.NotifyCollectionChangedAction.Reset)||snapshots[0]["id"]?.ToString()!="b")throw new Exception("Reordering and removal must avoid collection resets");
-using var source=new CountingReader(new string('x',200_000)+"\nnext\n");
+using var source=new CountingStream(new string('x',200_000)+"\nnext\n");
 var lines=new ClipWeave.BoundedLineReader(source);
 if((await lines.ReadAsync(300_000,CancellationToken.None)).Length!=200_000||await lines.ReadAsync(300_000,CancellationToken.None)!="next")throw new Exception("Chunked replies lost data across message boundaries");
 if(source.ReadCalls>30)throw new Exception("Large replies must not read one character at a time");
-try{await new ClipWeave.BoundedLineReader(new StringReader("123456\n")).ReadAsync(5,CancellationToken.None);throw new Exception("Oversized reply was accepted");}catch(IOException){}
+try{await new ClipWeave.BoundedLineReader(new MemoryStream(System.Text.Encoding.UTF8.GetBytes("123456\n"))).ReadAsync(5,CancellationToken.None);throw new Exception("Oversized reply was accepted");}catch(IOException){}
+// Keep the writer open: an exact transport-buffer-sized reply must return
+// immediately, without waiting for the next request or EOF.
+var listener=new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback,0);listener.Start();
+using var writer=new System.Net.Sockets.TcpClient();var accepting=listener.AcceptTcpClientAsync();
+await writer.ConnectAsync((System.Net.IPEndPoint)listener.LocalEndpoint);using var reader=await accepting;
+listener.Stop();var boundary=System.Text.Encoding.UTF8.GetBytes(new string('x',1023)+"\n");
+await writer.GetStream().WriteAsync(boundary);
+var transport=reader.GetStream();
+using var deadline=new CancellationTokenSource(TimeSpan.FromSeconds(2));
+if((await new ClipWeave.BoundedLineReader(transport).ReadAsync(2048,deadline.Token)).Length!=1023)throw new Exception("Pipe boundary reply was not returned immediately");
+var unicode=new string('汉',8191)+"🌍";
+using var unicodeBytes=new MemoryStream(System.Text.Encoding.UTF8.GetBytes(unicode+"\n"));
+Equal(await new ClipWeave.BoundedLineReader(unicodeBytes).ReadAsync(30_000,CancellationToken.None),unicode);
+Console.WriteLine("Open pipe at 1024-byte reply boundary and split UTF-8 decoding passed");
 Console.WriteLine("Incremental refresh, legacy settings, buffered IPC and bottom-anchored height tests passed");
-sealed class CountingReader(string content):StringReader(content){
+sealed class CountingStream(string content):MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)){
     public int ReadCalls;
-    public override ValueTask<int> ReadAsync(Memory<char> buffer,CancellationToken token=default){ReadCalls++;return base.ReadAsync(buffer,token);}
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer,CancellationToken token=default){ReadCalls++;return base.ReadAsync(buffer,token);}
 }

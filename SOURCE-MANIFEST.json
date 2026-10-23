@@ -31,7 +31,7 @@
     },
     {
       "path": "clients/windows-tests/Program.cs",
-      "sha256": "973bbce0f4d402efacbea8de4e44c38ccdbc2e22208721d76a2898da7624b8b0"
+      "sha256": "5da326aa3a23d27ae1daed0ec871d669528d91a6e4cc5745be210c40353373b3"
     },
     {
       "path": "clients/windows/App.xaml",
@@ -51,7 +51,7 @@
     },
     {
       "path": "clients/windows/BoundedLineReader.cs",
-      "sha256": "f2492c685b1dddc045e06d676babdbd9e41692a896c507d41a97805ae4bcd0f2"
+      "sha256": "e39013494a28225406163e1f4e55255b8e437b61ff1b13681fc9cffeaff0f326"
     },
     {
       "path": "clients/windows/ClipActions.cs",
@@ -75,7 +75,7 @@
     },
     {
       "path": "clients/windows/GoClient.cs",
-      "sha256": "c80f69b9a4f74eb5419305452b547667026252e070d175d74383e86aaf0551ae"
+      "sha256": "096e41520954d35fd438cf9397ae9bee13c4999d8214c316d01fc780677db0a8"
     },
     {
       "path": "clients/windows/HistoryUpdates.cs",

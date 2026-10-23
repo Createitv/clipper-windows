@@ -17,7 +17,7 @@ public sealed class GoClient : IAsyncDisposable {
         };
         start.ArgumentList.Add("--vault-dir"); start.ArgumentList.Add(directory);
         process=Process.Start(start) ?? throw new IOException(L10n.Text("无法启动 Go 核心"));
-        replies=new BoundedLineReader(process.StandardOutput);
+        replies=new BoundedLineReader(process.StandardOutput.BaseStream);
         // Drain diagnostics without retaining potentially sensitive process output.
         process.ErrorDataReceived += (_,_)=>{}; process.BeginErrorReadLine();
     }
