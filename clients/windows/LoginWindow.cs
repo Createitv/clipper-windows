@@ -16,6 +16,7 @@ sealed class LoginWindow:Window {
     readonly Button send=new(){Content=L10n.Text("发送验证码")};
     readonly StackPanel form=new(){Spacing=18,MaxWidth=350,VerticalAlignment=VerticalAlignment.Center,Margin=new Thickness(42)};
     readonly ContentControl formHost=new(){HorizontalContentAlignment=HorizontalAlignment.Stretch};
+    internal bool IsBusy=>busy;
     bool passwordMode=true,resetting,busy;string ticket="";
     public LoginWindow(MainWindow owner){
         this.owner=owner;Title="Clipper";

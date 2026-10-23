@@ -100,7 +100,7 @@ public sealed partial class MainWindow : Window {
         if(body.Children.Count==0||wasUnlocked!=AccountReady||renderedGroups!=(status["groups"]?.ToJsonString()??"")) Render();
         else { UpdateSyncIndicator(); if(AppWindow.IsVisible)RenderHistory(); }
         if(wasUnlocked&&!AccountReady){settingsWindow?.Close();ShowLogin();}
-        if(!wasUnlocked&&AccountReady){loginWindow?.Close();Shell.ShowPanel();}
+        if(AccountReady&&loginWindow!=null&&!loginWindow.IsBusy){loginWindow.Close();Shell.ShowPanel();}
         StateChanged?.Invoke();
     }
     internal async Task<ContentDialogResult> Dialog(string title,UIElement content,string primary) {
