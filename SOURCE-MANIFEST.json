@@ -3,7 +3,7 @@
   "files": [
     {
       "path": ".github/workflows/windows-package.yml",
-      "sha256": "d2b29033cfdb036c900113c9520fb1716085715fdeef41a26ce4d36379fc746e"
+      "sha256": "a3c8a5b041c23cad0be6bd883a9876c0012b3dea982c6dabafd6ede425567f4c"
     },
     {
       "path": ".github/workflows/windows-release.yml",
@@ -95,7 +95,7 @@
     },
     {
       "path": "clients/windows/MainWindow.cs",
-      "sha256": "a71c50e27cea6beb404a1ba39d216a96ebed5d69a849e846ba5887f14038c467"
+      "sha256": "5878b4bfb058b503d1086e1c2a4d862ee678c3c96926010ee495bf231890d7ac"
     },
     {
       "path": "clients/windows/SettingsValues.cs",
@@ -103,7 +103,7 @@
     },
     {
       "path": "clients/windows/SettingsWindow.cs",
-      "sha256": "6595fe4ce970e27b3802ef4c161f103b7cdf2267eda5cd5821ad1e6e0caa8374"
+      "sha256": "7f07fef0d1a84fa71c76f535054b19e70e4b6127447e9eb96c6a8b2ce26b79e2"
     },
     {
       "path": "clients/windows/UiDiagnostics.cs",
@@ -131,7 +131,7 @@
     },
     {
       "path": "clients/windows/ci-build.ps1",
-      "sha256": "04445ca5f596edfdd3bcc92d93f8fdc9db91ad43b3b50693595a9bac3d5e3918"
+      "sha256": "8c1df8749a7125fcb3edfcb94d149f89ac42f30785049f25c35a4f1258180061"
     },
     {
       "path": "clients/windows/ui-check.ps1",

@@ -14,6 +14,7 @@ sealed class SettingsWindow:Window {
     readonly List<Button> navigationButtons=[];
     readonly List<ScrollViewer> pages=[];
     readonly List<Control> accountControls=[];
+    readonly List<System.Action> updateToggles=[];
     readonly TextBlock connection=Palette.Text(""),pending=Palette.Text(""),email=Palette.Text(""),endpoint=Palette.Text("");
     readonly StackPanel deviceList=new(){Spacing=12},eventList=new(){Spacing=10};
     readonly TextBlock membershipStatus=Palette.Text(""),membershipExpiry=Palette.Text(""),membershipSource=Palette.Text("");
@@ -59,16 +60,17 @@ sealed class SettingsWindow:Window {
         b.Click+=async(_,_)=>{if(busy)return;b.IsEnabled=false;try{await Run(action);}finally{if(!closed)b.IsEnabled=!account||owner.AccountReady;}};return b;
     }
     async Task Run(Func<Task> action){if(busy||closed)return;busy=true;UpdateState();notice.Text="";try{await action();}catch(Exception error){if(!closed)notice.Text=L10n.Text(error.Message);}finally{busy=false;if(!closed)UpdateState();}}
-    void Toggle(StackPanel parent,string title,bool value,Func<bool,Task> save,bool account=false){
+    void Toggle(StackPanel parent,string title,bool value,Func<bool,Task> save,bool account=false,Func<bool>? read=null){
         var toggle=new ToggleSwitch{Header=L10n.Text(title),IsOn=value};if(account)accountControls.Add(toggle);
-        var reverting=false;
+        var reverting=false;if(read!=null)updateToggles.Add(()=>{var value=read();if(toggle.IsOn==value)return;reverting=true;toggle.IsOn=value;reverting=false;});
         toggle.Toggled+=async(_,_)=>{if(reverting||closed)return;var next=toggle.IsOn;if(busy){reverting=true;toggle.IsOn=!next;reverting=false;return;}toggle.IsEnabled=false;await Run(async()=>{try{await save(next);}catch{reverting=true;toggle.IsOn=!next;reverting=false;throw;}});if(!closed)toggle.IsEnabled=!account||owner.AccountReady;};parent.Children.Add(toggle);
     }
-    void Setting(StackPanel parent,string title,string key)=>Toggle(parent,title,SettingsValues.Boolean(Config,key),on=>owner.SaveConfig(new(){[key]=on}),true);
+    void Setting(StackPanel parent,string title,string key)=>Toggle(parent,title,SettingsValues.Boolean(Config,key),on=>owner.SaveConfig(new(){[key]=on}),true,()=>SettingsValues.Boolean(Config,key));
     void UpdateState(){
         if(closed)return;
         connection.Text=L10n.Text(owner.Status["status"]?.ToString()??"等待云端连接");pending.Text=L10n.Template("{0} 条",owner.Status["pending"]?.ToString()??"0");email.Text=Config["email"]?.ToString()??L10n.Text("未连接");endpoint.Text=Config["endpoint"]?.ToString()??"https://api.cliper.dev";
         foreach(var control in accountControls)control.IsEnabled=owner.AccountReady&&!busy;
+        if(!busy)foreach(var update in updateToggles)update();
     }
     void Build(){
         var general=Page("通用");var toolbar=Section(general,"工具栏与菜单栏");
@@ -100,7 +102,7 @@ sealed class SettingsWindow:Window {
         deviceList.Children.Clear();var list=devices as JsonArray??(devices as JsonObject)?["devices"] as JsonArray??new();
         if(list.Count==0)Help(deviceList,"没有可显示的设备");
         foreach(var device in list.OfType<JsonObject>()){
-            var id=device["deviceId"]?.ToString()??device["id"]?.ToString()??"";var current=SettingsValues.Boolean(device,"current"),revoked=SettingsValues.Boolean(device,"revoked");
+            var id=device["deviceId"]?.ToString()??device["id"]?.ToString()??"";bool current=SettingsValues.Boolean(device,"current"),revoked=SettingsValues.Boolean(device,"revoked");
             var row=new Grid{ColumnSpacing=14};row.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});row.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});
             var title=device["name"]?.ToString()??device["model"]?.ToString()??device["platform"]?.ToString()??L10n.Text("设备");row.Children.Add(Palette.Text(title+(current?" · "+L10n.Text("当前设备"):revoked?" · "+L10n.Text("已撤销"):"")));
             var revoke=Button("撤销…",async()=>{var stored=DeviceSecret.Read();var form=new StackPanel{Spacing=14};Help(form,"确认撤销此设备？撤销将阻止后续访问，已解密内容无法远程抹除。");var secret=new PasswordBox{Header=L10n.Text("原资料库口令")};if(stored==null)form.Children.Add(secret);if(await owner.Dialog(L10n.Text("撤销设备授权"),form,L10n.Text("撤销"))!=ContentDialogResult.Primary)return;var pass=stored??secret.Password;if(pass.Length==0)throw new IOException(L10n.Text("请输入原资料库口令"));await owner.CallCore("revoke",new(){["deviceId"]=id,["passphrase"]=pass});secret.Password="";await owner.RefreshData();await LoadRemote();});revoke.IsEnabled=!current&&!revoked;Grid.SetColumn(revoke,1);row.Children.Add(revoke);deviceList.Children.Add(row);

@@ -93,5 +93,6 @@ $manifest | Set-Content (Join-Path $publish 'SHA256SUMS.txt') -Encoding utf8
 $zip=Join-Path $artifacts "Clipper-Windows-$Architecture.zip"
 Compress-Archive -Path (Join-Path $publish '*') -DestinationPath $zip
 "{0}  {1}" -f (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower(),(Split-Path $zip -Leaf) | Set-Content "$zip.sha256" -Encoding utf8
+"ui_checks_path=$(Join-Path $artifacts 'ui-checks')" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "artifact_path=$artifacts" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "### Clipper Windows $Architecture`n`nUnsigned development ZIP built from ``$env:GITHUB_SHA``. Extract the whole archive, then run ``Clipper.exe``.`n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8

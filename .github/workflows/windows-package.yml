@@ -51,6 +51,13 @@ jobs:
         env:
           BUILD_ARCHITECTURE: ${{ matrix.architecture }}
         run: ./clients/windows/ci-build.ps1 -Architecture $env:BUILD_ARCHITECTURE
+      - name: Upload settings UI evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Clipper-Windows-UI-checks
+          path: ${{ steps.build.outputs.ui_checks_path }}
+          if-no-files-found: error
+          retention-days: 3
       - name: Upload development ZIP
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

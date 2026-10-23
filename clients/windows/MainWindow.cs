@@ -87,9 +87,8 @@ public sealed partial class MainWindow : Window {
     bool sessionRemembered;
     internal bool AccountReady => status["unlocked"]?.GetValue<bool>()==true && (status["config"] as JsonObject)?["connected"]?.GetValue<bool>()==true;
     async Task Refresh() {
-        await core.Call("requireAccount");
         var wasUnlocked=AccountReady;
-        status=await core.Call("status") as JsonObject ?? new();
+        status=await core.Call("requireAccount") as JsonObject ?? new();
         if(!triedAutoUnlock) {triedAutoUnlock=true;if(status["exists"]?.GetValue<bool>()==true&&status["unlocked"]?.GetValue<bool>()!=true&&DeviceSecret.Read() is string pass) {await core.Call("unlock",new(){["passphrase"]=pass});status=await core.Call("status") as JsonObject ?? new();}}
         if(status["unlocked"]?.GetValue<bool>()==true) sessionRemembered=AccountReady;
         if(AccountReady) {
