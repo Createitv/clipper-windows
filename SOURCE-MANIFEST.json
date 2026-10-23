@@ -59,7 +59,7 @@
     },
     {
       "path": "clients/windows/ClipPresentation.cs",
-      "sha256": "6bc7813ce12d415a93b5a66ecebefc5e9b9341518a7a148b01e60b6c6cd92aca"
+      "sha256": "9d8afa3e8a4c8e5e66a40094d5c358ba58dfd201a93899b7e9510f1c12e7e106"
     },
     {
       "path": "clients/windows/ClipWeave.csproj",
@@ -103,7 +103,7 @@
     },
     {
       "path": "clients/windows/SettingsWindow.cs",
-      "sha256": "87bec1e3a16748dbe84b37f154c19865e1f688bb6f8255febb9f0f9b2064863f"
+      "sha256": "7269c1b6ed8eb8932ba76c631c1b8a47af239f7ccb2846e1bcd519b96761bece"
     },
     {
       "path": "clients/windows/UiDiagnostics.cs",
@@ -119,7 +119,7 @@
     },
     {
       "path": "clients/windows/WindowsShell.cs",
-      "sha256": "35a6f82e1886b688e7ee69c68074ab677c1aada14826ebd572f4ead57c06f102"
+      "sha256": "2388dfd6211b719dcf91db9c3fc7bedec033a4d23eff805a96e1f318b44fb303"
     },
     {
       "path": "clients/windows/app.manifest",

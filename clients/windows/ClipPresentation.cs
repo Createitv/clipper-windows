@@ -19,7 +19,7 @@ public static class ClipPresentation {
     public static PanelRectangle PanelBounds(int left,int top,int width,int height,double scale,double requestedHeight=430) {
         if(!double.IsFinite(scale)||scale<=0)scale=1;
         if(!double.IsFinite(requestedHeight))requestedHeight=430;
-        requestedHeight=Math.Clamp(requestedHeight,300,760);
+        requestedHeight=Math.Clamp(requestedHeight,400,760);
         var gap=Math.Min((int)Math.Round(12*scale),Math.Max(0,Math.Min(width,height)/4));
         return new(left+gap,top+height-gap-Math.Min((int)Math.Round(requestedHeight*scale),Math.Max(1,height-2*gap)),Math.Max(1,width-2*gap),Math.Min((int)Math.Round(requestedHeight*scale),Math.Max(1,height-2*gap)));
     }

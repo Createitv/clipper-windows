@@ -75,7 +75,7 @@ sealed class WindowsShell : IDisposable {
         window.AppWindow.MoveAndResize(new RectInt32(box.X,box.Y,box.Width,box.Height));
     }
     public void ActivateWindow(Window target)=>SetForegroundWindow(WindowNative.GetWindowHandle(target));
-    public void SetPanelHeight(double height){window.Preferences.PanelHeight=double.IsFinite(height)?Math.Clamp(height,300,760):430;Position(false);saveHeight.Stop();saveHeight.Start();}
+    public void SetPanelHeight(double height){window.Preferences.PanelHeight=double.IsFinite(height)?Math.Clamp(height,400,760):430;Position(false);saveHeight.Stop();saveHeight.Start();}
     public void SetTrayVisible(bool visible) {
         if(!visible){if(tray!=null){window.Root.Children.Remove(tray);tray.Dispose();tray=null;icon?.Dispose();icon=null;}return;}
         if(tray!=null || window.Root.XamlRoot==null)return;
