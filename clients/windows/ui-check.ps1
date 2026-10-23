@@ -39,6 +39,10 @@ try {
     foreach($tab in @('general','account','authorization','membership','privacy','about')){
         InvokeControl (Control $window "settings-tab-$tab")
         Write-Output "Settings page opened: $tab"
+        if($tab -eq 'authorization'){
+            $bounds=(Control $window 'settings-auth-code').Current.BoundingRectangle
+            if($bounds.Right -gt $window.Current.BoundingRectangle.Right -or $bounds.Left -lt $window.Current.BoundingRectangle.Left){throw 'Authorization form exceeds the visible window'}
+        }
         # Empty hosted profile only. Screenshot failure is diagnostic, not a replacement for UI assertions.
         try {
             $rect=$window.Current.BoundingRectangle

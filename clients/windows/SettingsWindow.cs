@@ -9,7 +9,7 @@ sealed class SettingsWindow:Window {
     readonly MainWindow owner;
     readonly Grid root=new(){Background=Palette.Soft,RequestedTheme=ElementTheme.Light};
     readonly Grid navigation=new(){Background=Palette.White,Padding=new Thickness(18,10,18,8)};
-    readonly ContentControl pageHost=new(){HorizontalContentAlignment=HorizontalAlignment.Stretch,VerticalContentAlignment=VerticalAlignment.Stretch};
+    readonly ContentControl pageHost=new(){ContentTransitions=new Microsoft.UI.Xaml.Media.Animation.TransitionCollection(),HorizontalContentAlignment=HorizontalAlignment.Stretch,VerticalContentAlignment=VerticalAlignment.Stretch};
     readonly TextBlock notice=Palette.Text("");
     readonly List<Button> navigationButtons=[];
     readonly List<ScrollViewer> pages=[];
@@ -45,7 +45,7 @@ sealed class SettingsWindow:Window {
     static void Help(StackPanel parent,string key){var text=Palette.Text(L10n.Text(key),12);text.Foreground=Palette.Muted;parent.Children.Add(text);}
     static void Row(StackPanel parent,string key,TextBlock value){var row=new Grid{ColumnSpacing=18};row.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});row.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});row.Children.Add(Palette.Text(L10n.Text(key)));value.HorizontalAlignment=HorizontalAlignment.Right;value.TextWrapping=TextWrapping.Wrap;Grid.SetColumn(value,1);row.Children.Add(value);parent.Children.Add(row);}
     void Tab(string key,string title,string glyph,StackPanel page){
-        var index=pages.Count;pages.Add(new ScrollViewer{Content=page,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled});
+        var index=pages.Count;pages.Add(new ScrollViewer{Content=page,HorizontalContentAlignment=HorizontalAlignment.Stretch,VerticalContentAlignment=VerticalAlignment.Top,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled});
         navigation.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
         var label=new StackPanel{Spacing=6,HorizontalAlignment=HorizontalAlignment.Center};label.Children.Add(new FontIcon{Glyph=glyph,FontSize=19});var text=Palette.Text(L10n.Text(title),11);text.TextAlignment=TextAlignment.Center;text.MaxLines=2;label.Children.Add(text);
         var button=new Button{Content=label,Background=Palette.White,BorderThickness=new Thickness(0),CornerRadius=new CornerRadius(9),HorizontalAlignment=HorizontalAlignment.Stretch,HorizontalContentAlignment=HorizontalAlignment.Center,MinHeight=66,Padding=new Thickness(6)};
@@ -55,7 +55,7 @@ sealed class SettingsWindow:Window {
         if(index==1&&owner.AccountReady)_=Run(LoadRemote);if(index==3&&owner.AccountReady)_=Run(()=>LoadMembership(false));
     }
     Button Button(string title,Func<Task> action,bool account=false,string? id=null){
-        var b=new Button{Content=L10n.Text(title)};if(id!=null)AutomationProperties.SetAutomationId(b,id);
+        var b=new Button{Content=L10n.Text(title),CornerRadius=new CornerRadius(8),Background=Palette.White,Foreground=Palette.Ink,BorderBrush=Palette.Border,BorderThickness=new Thickness(1),Padding=new Thickness(12,8,12,8)};if(id!=null)AutomationProperties.SetAutomationId(b,id);
         if(account)accountControls.Add(b);
         b.Click+=async(_,_)=>{if(busy)return;b.IsEnabled=false;try{await Run(action);}finally{if(!closed)b.IsEnabled=!account||owner.AccountReady;}};return b;
     }
@@ -87,7 +87,7 @@ sealed class SettingsWindow:Window {
         sync.Children.Add(Button("连接账号…",()=>{owner.ShowLogin(true);return Task.CompletedTask;}));sync.Children.Add(Button("立即同步",async()=>{await owner.SyncNow();await LoadRemote();},true));sync.Children.Add(Button("断开同步连接",async()=>{if(await owner.Dialog(L10n.Text("断开同步连接？"),Palette.Text(L10n.Text("本机加密资料库会保留，连接后才能继续同步。")),L10n.Text("断开连接"))!=ContentDialogResult.Primary)return;await owner.CallCore("disconnect");await owner.RefreshData();owner.ShowLogin();},true));
         var devices=Section(account,"已授权设备");devices.Children.Add(Button("刷新",LoadRemote,true));devices.Children.Add(deviceList);var events=Section(account,"登录记录");events.Children.Add(eventList);Tab("account","账号与设备","\uE77B",account);
 
-        var auth=Page("授权与恢复");var authorize=Section(auth,"授权新设备","扫描新设备的二维码，或输入 12 位授权码。");authorize.Children.Add(Button("扫描授权二维码",owner.ScanAuthorization,true));var code=new TextBox{Header=L10n.Text("12 位授权码"),PlaceholderText="ABCD-2345-WXYZ",MaxLength=20};accountControls.Add(code);authorize.Children.Add(code);authorize.Children.Add(Button("检查请求",()=>owner.AuthorizeCode(code.Text),true));authorize.Children.Add(Button("等待设备授权",owner.ShowAuthorization));var recovery=Section(auth,"恢复文件");Help(recovery,"恢复文件包含解密密钥，请离线保存，不要发送给他人。");recovery.Children.Add(Button("导入恢复文件…",owner.ImportRecoveryFile));recovery.Children.Add(Button("导出恢复文件…",owner.ExportRecoveryFile,true));Tab("authorization","授权与恢复","\uE72E",auth);
+        var auth=Page("授权与恢复");var authorize=Section(auth,"授权新设备","扫描新设备的二维码，或输入 12 位授权码。");authorize.Children.Add(Button("扫描授权二维码",owner.ScanAuthorization,true));var code=new TextBox{Header=L10n.Text("12 位授权码"),PlaceholderText="ABCD-2345-WXYZ",MaxLength=20};AutomationProperties.SetAutomationId(code,"settings-auth-code");accountControls.Add(code);authorize.Children.Add(code);authorize.Children.Add(Button("检查请求",()=>owner.AuthorizeCode(code.Text),true));authorize.Children.Add(Button("等待设备授权",owner.ShowAuthorization));var recovery=Section(auth,"恢复文件");Help(recovery,"恢复文件包含解密密钥，请离线保存，不要发送给他人。");recovery.Children.Add(Button("导入恢复文件…",owner.ImportRecoveryFile));recovery.Children.Add(Button("导出恢复文件…",owner.ExportRecoveryFile,true));Tab("authorization","授权与恢复","\uE72E",auth);
 
         var member=Page("会员");var pro=Section(member,"Clipper Pro");Help(pro,"同一账户，在手机、Mac 和 Windows 接续。10 GB 加密云存储，剪贴板历史和文件同步。");foreach(var key in new[]{"文字、图片和文件的云端历史","关键词搜索、类型筛选与收藏","个人设备间端到端加密同步","月付和年付权益相同，均含 10 GB 加密云存储。","新账户享 3 天免费试用，无需绑卡，不会自动扣费。可选择自动续费或一次性购买。","端到端加密保持不变；付款平台不会收到你的剪贴板内容或解密密钥。"})Help(pro,key);
         var current=Section(member,"当前会员");Row(current,"状态",membershipStatus);Row(current,"有效期",membershipExpiry);Row(current,"来源",membershipSource);current.Children.Add(Button("刷新会员",()=>LoadMembership(true),true));current.Children.Add(Button("前往网页查看月付和年付",()=>Open("https://cliper.dev/account/billing")));current.Children.Add(Button("管理订阅",()=>Open(membershipOrigin=="apple"?"https://apps.apple.com/account/subscriptions":"https://cliper.dev/account/billing")));var legal=Section(member,"条款与隐私");legal.Children.Add(Button("隐私政策",()=>Open("https://cliper.dev/privacy")));legal.Children.Add(Button("服务条款",()=>Open("https://cliper.dev/terms")));Tab("membership","会员","\uE734",member);

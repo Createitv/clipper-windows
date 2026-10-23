@@ -103,7 +103,7 @@
     },
     {
       "path": "clients/windows/SettingsWindow.cs",
-      "sha256": "ac93a47bc1b910adea7d05bac98c4ca0ad65828272060d4c81bb6a6afd7e1af0"
+      "sha256": "87bec1e3a16748dbe84b37f154c19865e1f688bb6f8255febb9f0f9b2064863f"
     },
     {
       "path": "clients/windows/UiDiagnostics.cs",
@@ -135,7 +135,7 @@
     },
     {
       "path": "clients/windows/ui-check.ps1",
-      "sha256": "8a961a5f774849c8751a712061a09e9c3b960ed67a0dc953eeef6ebcc16cd09d"
+      "sha256": "c22cdd196fa0cc8b36820b4fe6a649344e099a5bbeb957b75ede4b6213086946"
     },
     {
       "path": "native/bridge/client.go",
