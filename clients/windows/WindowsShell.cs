@@ -35,6 +35,7 @@ sealed class WindowsShell : IDisposable {
             if((uint)e.Message.MessageId==0x007E&&window.AppWindow.IsVisible)Position();
         };
         HotkeyAvailable=RegisterHotKey(hwnd,1,0x4000|0x0002|0x0004,0x56);
+        if(!HotkeyAvailable){window.Preferences.ShowTray=true;window.Preferences.Save();}
         if(!HotkeyAvailable)window.SetNotice(L10n.Text("快捷键已被占用，可从任务栏托盘打开 Clipper。"));
         window.AppWindow.Closing+=(_,e)=>{if(!exiting){e.Cancel=true;HidePanel(false);}};
         window.Activated+=(_,e)=>{

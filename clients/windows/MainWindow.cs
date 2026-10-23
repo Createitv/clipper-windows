@@ -65,6 +65,8 @@ public sealed partial class MainWindow : Window {
     internal Task<JsonNode?> CallCore(string action,JsonObject? args=null)=>core.Call(action,args);
     internal Task RefreshData()=>Refresh();
     internal Task SyncNow()=>Action("sync");
+    internal bool CanUnlock=>status["exists"]?.GetValue<bool>()==true&&DeviceSecret.Read()!=null;
+    internal async Task UnlockDevice(){var secret=DeviceSecret.Read()??throw new IOException(L10n.Text("请输入原资料库口令"));await core.Call("unlock",new(){["passphrase"]=secret});await Refresh();if(!AccountReady)throw new IOException(L10n.Text("请重新登录账户"));loginWindow?.Close();Shell.ShowPanel();}
     internal async Task LockVault(){previewWindow?.Close();thumbnails.Clear();thumbnailEpoch++;await Action("lock");Shell.HidePanel();ShowLogin();}
     internal async Task ToggleCapture(){var config=status["config"] as JsonObject??new();await SaveConfig(new(){["captureEnabled"]=config["captureEnabled"]?.GetValue<bool>()!=true});}
     internal async Task SaveConfig(JsonObject values){await core.Call("config",new(){["values"]=values});await Refresh();}
@@ -95,7 +97,7 @@ public sealed partial class MainWindow : Window {
         }
         if(!AccountReady){thumbnailEpoch++;thumbnails.Clear();previewWindow?.Close();}
         clips=AccountReady ? (await core.Call("list") as JsonArray ?? new()).OfType<JsonObject>().ToList() : new();
-        if(body.Children.Count==0||wasUnlocked!=AccountReady) Render();
+        if(body.Children.Count==0||wasUnlocked!=AccountReady||renderedGroups!=(status["groups"]?.ToJsonString()??"")) Render();
         else { UpdateSyncIndicator(); if(AppWindow.IsVisible)RenderHistory(); }
         StateChanged?.Invoke();
     }

@@ -44,7 +44,7 @@ if($LASTEXITCODE -ne 0){throw 'QR and localization test build failed'}
 if($LASTEXITCODE -ne 0){throw 'QR and localization tests failed'}
 & msbuild (Join-Path $PSScriptRoot 'ClipWeave.csproj') /restore /t:Publish /p:Configuration=Release "/p:RuntimeIdentifier=win-$($Architecture.ToLower())" /p:Platform=$Architecture "/p:ClipWeaveCorePath=$core" "/p:BaseIntermediateOutputPath=$work/obj/" "/p:BaseOutputPath=$work/bin/" "/p:PublishDir=$publish/"
 if($LASTEXITCODE -ne 0){throw 'WinUI publish failed'}
-foreach($name in @('ClipWeave.exe','clipweave-core.exe')) {
+foreach($name in @('Clipper.exe','clipweave-core.exe')) {
     if(-not (Test-Path (Join-Path $publish $name))){throw "Missing published executable: $name"}
 }
 
@@ -68,12 +68,27 @@ if($Architecture -eq 'x64') {
     } finally {$process.Dispose()}
 }
 
+# Exercise the packaged GUI startup in the ephemeral runner's fresh profile.
+# This checks activation/XAML/dependency loading; clipboard/camera still need hardware QA.
+if($Architecture -eq 'x64') {
+    $gui=Start-Process (Join-Path $publish 'Clipper.exe') -PassThru
+    try {
+        Start-Sleep -Seconds 12
+        $gui.Refresh()
+        if($gui.HasExited){throw "Clipper GUI exited during startup: $($gui.ExitCode)"}
+        "GUI startup survived; window title: $($gui.MainWindowTitle)" | Write-Output
+    } finally {
+        if(-not $gui.HasExited){Stop-Process -Id $gui.Id -Force}
+        Get-Process -Name 'clipweave-core' -ErrorAction SilentlyContinue | Stop-Process -Force
+    }
+}
+
 @"
 Clipper Windows development build ($Architecture)
 Commit: $env:GITHUB_SHA
 Build: $env:GITHUB_RUN_NUMBER
 
-Extract the complete ZIP into a folder and run ClipWeave.exe.
+Extract the complete ZIP into a folder and run Clipper.exe.
 Keep clipweave-core.exe and all bundled DLLs beside the application.
 This is an unsigned development build, not an installer or a Microsoft Store release.
 ARM64 is cross-built and not runtime-tested on this x64 runner.
@@ -88,4 +103,4 @@ $zip=Join-Path $artifacts "Clipper-Windows-$Architecture.zip"
 Compress-Archive -Path (Join-Path $publish '*') -DestinationPath $zip
 "{0}  {1}" -f (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower(),(Split-Path $zip -Leaf) | Set-Content "$zip.sha256" -Encoding utf8
 "artifact_path=$artifacts" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"### Clipper Windows $Architecture`n`nUnsigned development ZIP built from ``$env:GITHUB_SHA``. Extract the whole archive, then run ``ClipWeave.exe``.`n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+"### Clipper Windows $Architecture`n`nUnsigned development ZIP built from ``$env:GITHUB_SHA``. Extract the whole archive, then run ``Clipper.exe``.`n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8

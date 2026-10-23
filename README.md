@@ -11,7 +11,7 @@ No original repository Git history is included. See SOURCE-MANIFEST.json.
 Open **Releases** and download **Clipper-Windows-x64.zip** for Intel/AMD Windows.
 Only one Windows architecture is published. Its SHA-256 checksum is also available.
 Development artifacts are also available under Actions. Extract
-the complete application ZIP, then run **ClipWeave.exe**. Keep its Go helper and
+the complete application ZIP, then run **Clipper.exe**. Keep its Go helper and
 all DLLs in the same directory. These are unsigned development builds, not a
 signed installer or Microsoft Store release. This is not a native ARM64 build. Builds alone do not prove clipboard/system
 integration or cross-device synchronization works on physical devices.

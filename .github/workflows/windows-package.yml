@@ -9,7 +9,7 @@ on:
       - 'clients/windows/**'
       - 'clients/windows-tests/**'
       - 'native/**'
-      - 'assets/brand/menu/*.ico'
+      - 'assets/brand/**'
 
 permissions:
   contents: read

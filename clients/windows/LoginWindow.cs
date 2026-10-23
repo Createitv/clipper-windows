@@ -15,6 +15,7 @@ sealed class LoginWindow:Window {
     readonly Button submit=new(){HorizontalAlignment=HorizontalAlignment.Stretch};
     readonly Button send=new(){Content=L10n.Text("发送验证码")};
     readonly StackPanel form=new(){Spacing=18,MaxWidth=350,VerticalAlignment=VerticalAlignment.Center,Margin=new Thickness(42)};
+    readonly ContentControl formHost=new(){HorizontalContentAlignment=HorizontalAlignment.Stretch};
     bool passwordMode=true,resetting,busy;string ticket="";
     public LoginWindow(MainWindow owner){
         this.owner=owner;Title="Clipper";
@@ -31,10 +32,10 @@ sealed class LoginWindow:Window {
             if((resetting||ticket.Length>0)&&(password.Password.Length<8||password.Password.Length>128||password.Password!=confirm.Password))throw new IOException(L10n.Text("请输入两次一致的 8–128 字符密码。"));
             var result=await owner.SignIn(email.Text.Trim(),password.Password,ticket.Length>0?ticket:((resetting||!passwordMode)?code.Text:""),passwordMode||ticket.Length>0);
             if(result["passwordSetupRequired"]?.GetValue<bool>()==true){ticket=result["verificationToken"]?.ToString()??"";passwordMode=true;resetting=true;notice.Text=L10n.Text("邮箱已验证，请设置密码后继续。");Update();}
-        });form.Children.Add(submit);form.Children.Add(notice);
+        });form.Children.Add(submit);if(owner.CanUnlock){var unlock=new Button{Content=L10n.Text("使用设备安全凭据解锁"),HorizontalAlignment=HorizontalAlignment.Stretch};unlock.Click+=async(_,_)=>await Perform(owner.UnlockDevice);form.Children.Add(unlock);}form.Children.Add(notice);
         send.Click+=async(_,_)=>await Perform(async()=>{await owner.CallCore("requestCode",new(){["endpoint"]="https://api.cliper.dev",["email"]=email.Text.Trim()});notice.Text=L10n.Text("已请求验证码，请查看邮箱。");});
-        var scroll=new ScrollViewer{Content=form,VerticalScrollBarVisibility=ScrollBarVisibility.Auto};Grid.SetColumn(scroll,1);root.Children.Add(scroll);Content=root;AppWindow.Resize(new Windows.Graphics.SizeInt32(960,700));this.CenterOnScreen();Closed+=(_,_)=>owner.LoginClosed();Update();
+        formHost.Content=form;var scroll=new ScrollViewer{Content=formHost,VerticalScrollBarVisibility=ScrollBarVisibility.Auto};Grid.SetColumn(scroll,1);root.Children.Add(scroll);Content=root;AppWindow.Resize(new Windows.Graphics.SizeInt32(960,700));this.CenterOnScreen();Closed+=(_,_)=>owner.LoginClosed();Update();
     }
     void Update(){password.Visibility=passwordMode?Visibility.Visible:Visibility.Collapsed;confirm.Visibility=resetting?Visibility.Visible:Visibility.Collapsed;code.Visibility=send.Visibility=(!passwordMode||resetting)&&ticket.Length==0?Visibility.Visible:Visibility.Collapsed;submit.Content=L10n.Text(ticket.Length>0?"保存密码并登录":"登录");}
-    async Task Perform(Func<Task> operation){if(busy)return;busy=true;form.IsEnabled=false;notice.Text="";try{await operation();}catch(Exception e){notice.Text=L10n.Text(e.Message);}finally{busy=false;form.IsEnabled=true;}}
+    async Task Perform(Func<Task> operation){if(busy)return;busy=true;formHost.IsEnabled=false;notice.Text="";try{await operation();}catch(Exception e){notice.Text=L10n.Text(e.Message);}finally{busy=false;formHost.IsEnabled=true;}}
 }

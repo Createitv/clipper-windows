@@ -76,7 +76,7 @@ jobs:
                   checked.add(name)
               files = {entry.filename for entry in zipped.infolist() if not entry.is_dir()}
               assert checked == files - {'SHA256SUMS.txt'}, 'Incomplete file checksum list'
-              for name in ('ClipWeave.exe', 'clipweave-core.exe'):
+              for name in ('Clipper.exe', 'clipweave-core.exe'):
                   data = zipped.read(name)
                   offset = struct.unpack_from('<I', data, 0x3c)[0]
                   assert data[offset:offset+4] == b'PE\0\0', name
@@ -88,7 +88,9 @@ jobs:
           notes = root / 'release-notes.md'
           notes.write_text('''Windows x64 预览版，适用于 Intel / AMD 64 位 Windows 电脑。
 
-          下载 **Clipper-Windows-x64.zip**，完整解压后运行 **ClipWeave.exe**。请保留同目录中的 clipweave-core.exe 和所有 DLL，无需安装 Go 或 .NET 开发工具。
+          本版重新设计为与 macOS 一致的白色横向卡片面板，在 Windows 任务栏上方显示。包含搜索、分组、收藏、类型筛选、内容预览、托盘和 Ctrl+Shift+V 快捷键，以及六个设置分页；保留二维码 / 12 位授权码。
+
+          下载 **Clipper-Windows-x64.zip**，完整解压后运行 **Clipper.exe**。请保留同目录中的 clipweave-core.exe 和所有 DLL，无需安装 Go 或 .NET 开发工具。
 
           本版本为未签名的便携开发预览包。已通过 GitHub Actions 构建及 x64 Go 核心通信检查，尚未完成真实 Windows 图形界面和跨设备同步验收。此下载不是 ARM 原生版本。
 

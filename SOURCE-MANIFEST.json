@@ -3,11 +3,11 @@
   "files": [
     {
       "path": ".github/workflows/windows-package.yml",
-      "sha256": "d499feb64e30740a2f83b82b39d3dbdc1fc501f6c140be577d5187d381e645f4"
+      "sha256": "d2b29033cfdb036c900113c9520fb1716085715fdeef41a26ce4d36379fc746e"
     },
     {
       "path": ".github/workflows/windows-release.yml",
-      "sha256": "897586c2ec9f45542775ac9145af9c5219b3184c41e2f000f489e7c8104a081d"
+      "sha256": "1e3dfe6fe207abccd8cff6c5c8901f7e4780abd9d7fa120b87a86f06d2265ac6"
     },
     {
       "path": "assets/brand/LoginArtwork.png",
@@ -43,7 +43,7 @@
     },
     {
       "path": "clients/windows/ClipActions.cs",
-      "sha256": "951d3c5f0269aeb601c84e90dc8f80a932fcfd8f62bf6d4e616b416655dad394"
+      "sha256": "629902d7c9ec0e3a48adc58c47bdba5562bed818c798591ef14301fc9d904b25"
     },
     {
       "path": "clients/windows/ClipPresentation.cs",
@@ -51,7 +51,7 @@
     },
     {
       "path": "clients/windows/ClipWeave.csproj",
-      "sha256": "bd072d0e5d2b5ee3c813cd1a85d25e56867a11dbcca00a27ad46af74ab64f006"
+      "sha256": "8df5405587712e7a6600572c82f707cbb8b9f102e91c8691630f8c4615f55e0f"
     },
     {
       "path": "clients/windows/ClipboardAdapter.cs",
@@ -71,19 +71,19 @@
     },
     {
       "path": "clients/windows/LoginWindow.cs",
-      "sha256": "9b36d1118d749b8626158f40b224f12eec2c4709cbe46c6e841b4609f8e25027"
+      "sha256": "1b43a249728749232706261a5d2e66f6e2f63800cc528bb76e62b0be297bf00a"
     },
     {
       "path": "clients/windows/MainPanel.cs",
-      "sha256": "07e3989ba200bdd97cf885a88555a443e35793da4cc25012174f9953df7f6323"
+      "sha256": "a02aa8daf157caa8f4f8f66914a5c3ed055090dee9eb3f790b1a9b4d21bc61c9"
     },
     {
       "path": "clients/windows/MainWindow.cs",
-      "sha256": "049056ce445d5b54f941e994694c046a0cc75fd045b68a161c6a21b892769b6c"
+      "sha256": "b47be22427e7605fd7a0cd53397d3846bbe5c7fecff88e652c0faf30076857f9"
     },
     {
       "path": "clients/windows/SettingsWindow.cs",
-      "sha256": "e8ab70b9a9430eaf8def00c07366804f7c31d0212ebc71f3d83c66c378a76689"
+      "sha256": "96bf197d859f24c0f7392ae79106465b221626c9c123acf6baa413e60e2ca0ac"
     },
     {
       "path": "clients/windows/WindowsPreferences.cs",
@@ -91,7 +91,7 @@
     },
     {
       "path": "clients/windows/WindowsShell.cs",
-      "sha256": "b1fc62b41375867de522f193c8879184cf3ac1a3674819fb2d8f859a58c71314"
+      "sha256": "c7974702df1d430c73b1cbdf8ce87933350d5eed14218655602cfaff05e40b2b"
     },
     {
       "path": "clients/windows/app.manifest",
@@ -103,7 +103,7 @@
     },
     {
       "path": "clients/windows/ci-build.ps1",
-      "sha256": "f9d6160930cc788e0c17e3f72fadaddfa7fa58089426d714a83d9774392623db"
+      "sha256": "88b142f7cc37cff28875c7b10cd998acf135ae8bb8acabad1013e021f076f4d6"
     },
     {
       "path": "clients/windows-tests/LocalizationTests.csproj",

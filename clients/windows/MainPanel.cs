@@ -26,12 +26,14 @@ public sealed partial class MainWindow {
     readonly TextBlock syncLabel=Palette.Text("",11);
     readonly Dictionary<string,BitmapImage> thumbnails=new();
     int thumbnailEpoch;
+    string renderedGroups="";
     string historySignature="";
     string selectedClipId="";
     List<JsonObject> visibleClips=[];
     bool historyConfigured;
     void Render() {
-        Detach(search);Detach(groupStrip);Detach(history);Detach(state);
+        renderedGroups=status["groups"]?.ToJsonString()??"";
+        Detach(search);Detach(groupStrip);Detach(history);Detach(state);Detach(countLabel);
         body.Children.Clear();body.RowDefinitions.Clear();
         foreach(var height in new[]{GridLength.Auto,GridLength.Auto,new GridLength(1,GridUnitType.Star),GridLength.Auto})body.RowDefinitions.Add(new RowDefinition{Height=height});
         var toolbar=new Grid{Padding=new Thickness(22,14,22,14),ColumnSpacing=12};
