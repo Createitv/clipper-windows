@@ -51,7 +51,7 @@ public sealed partial class MainWindow : Window {
         refreshTimer=DispatcherQueue.CreateTimer();refreshTimer.Interval=TimeSpan.FromSeconds(2);
         refreshTimer.Tick+=async(_,_)=>{if(!busy&&!closed)await Run(Refresh);};refreshTimer.Start();
         Closed+=async(_,_)=>{closed=true;refreshTimer.Stop();Shell.Dispose();settingsWindow?.Close();loginWindow?.Close();previewWindow?.Close();ClearPreviews();await core.DisposeAsync();};
-        _=Run(async()=>{await Refresh();if(AccountReady)Shell.ShowPanel();else ShowLogin();});
+        _=Run(async()=>{await Refresh();if(Environment.GetCommandLineArgs().Contains("--settings"))OpenSettings();else if(AccountReady)Shell.ShowPanel();else ShowLogin();});
     }
     internal Task Execute(Func<Task> operation)=>Run(operation);
     async Task Run(Func<Task> operation) {
@@ -70,7 +70,7 @@ public sealed partial class MainWindow : Window {
     internal async Task LockVault(){previewWindow?.Close();thumbnails.Clear();thumbnailEpoch++;await Action("lock");Shell.HidePanel();ShowLogin();}
     internal async Task ToggleCapture(){var config=status["config"] as JsonObject??new();await SaveConfig(new(){["captureEnabled"]=config["captureEnabled"]?.GetValue<bool>()!=true});}
     internal async Task SaveConfig(JsonObject values){await core.Call("config",new(){["values"]=values});await Refresh();}
-    internal void OpenSettings(){Shell.HidePanel();if(!AccountReady){ShowLogin();return;}settingsWindow??=new SettingsWindow(this);settingsWindow.Activate();}
+    internal void OpenSettings(){Shell.HidePanel();settingsWindow??=new SettingsWindow(this);settingsWindow.Activate();}
     internal void SettingsClosed(){settingsWindow=null;}
     internal void ShowLogin(){if(closed)return;Shell.HidePanel();loginWindow??=new LoginWindow(this);loginWindow.Activate();}
     internal void LoginClosed(){loginWindow=null;}

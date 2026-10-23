@@ -71,12 +71,13 @@ if($Architecture -eq 'x64') {
 # Exercise the packaged GUI startup in the ephemeral runner's fresh profile.
 # This checks activation/XAML/dependency loading; clipboard/camera still need hardware QA.
 if($Architecture -eq 'x64') {
-    $gui=Start-Process (Join-Path $publish 'Clipper.exe') -PassThru
+    $gui=Start-Process (Join-Path $publish 'Clipper.exe') -ArgumentList '--settings' -PassThru
     try {
         Start-Sleep -Seconds 12
         $gui.Refresh()
         if($gui.HasExited){throw "Clipper GUI exited during startup: $($gui.ExitCode)"}
-        "GUI startup survived; window title: $($gui.MainWindowTitle)" | Write-Output
+        if($gui.MainWindowTitle -notmatch 'Settings|设置'){throw "Settings window did not open: $($gui.MainWindowTitle)"}
+        "Settings startup survived; window title: $($gui.MainWindowTitle)" | Write-Output
     } finally {
         if(-not $gui.HasExited){Stop-Process -Id $gui.Id -Force}
         Get-Process -Name 'clipweave-core' -ErrorAction SilentlyContinue | Stop-Process -Force
