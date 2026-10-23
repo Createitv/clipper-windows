@@ -51,7 +51,7 @@
     },
     {
       "path": "clients/windows/ci-build.ps1",
-      "sha256": "846fbed78df55bd0cf80fbf2d7941e4f6858b283a4ebe149a11a449432587764"
+      "sha256": "4a4f57bdaf153078dec22d2fd414d31f5b1493debba3af995c078d334cf6a5d2"
     },
     {
       "path": "native/bridge/client.go",
