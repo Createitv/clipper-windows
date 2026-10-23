@@ -11,7 +11,7 @@ namespace ClipWeave;
 public sealed partial class MainWindow : Window {
     readonly GoClient core=new();
     readonly Grid body=new();
-    readonly Grid shellRoot=new();
+    readonly Grid shellRoot=new(){Background=Palette.White,RequestedTheme=ElementTheme.Light};
     readonly ContentControl viewport=new(){HorizontalContentAlignment=HorizontalAlignment.Stretch,VerticalContentAlignment=VerticalAlignment.Stretch};
     readonly TextBlock state=new(){TextWrapping=TextWrapping.Wrap};
     readonly TextBlock error=new(){TextWrapping=TextWrapping.Wrap,Foreground=new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.IndianRed)};
@@ -57,20 +57,25 @@ public sealed partial class MainWindow : Window {
     async Task Run(Func<Task> operation) {
         if(closed)return;await operations.WaitAsync();
         try {
-            if(closed)return;busy=true;error.Text="";viewport.IsEnabled=false;
+            if(closed)return;busy=true;error.Text="";
             try{await operation();}
-            catch(Exception e){if(e is BridgeException failure&&failure.Payload!=null){await SaveRecovery(failure.Payload);try{await Refresh();}catch{}}error.Text=L10n.Text(e.Message);SetNotice(error.Text);}
-        } finally{busy=false;viewport.IsEnabled=true;operations.Release();StateChanged?.Invoke();}
+            catch(Exception e){if(e is not BridgeException)UiDiagnostics.Record("main-operation",e);if(e is BridgeException failure&&failure.Payload!=null){await SaveRecovery(failure.Payload);try{await Refresh();}catch{}}error.Text=L10n.Text(e.Message);SetNotice(error.Text);}
+        } finally{busy=false;operations.Release();StateChanged?.Invoke();}
     }
     internal Task<JsonNode?> CallCore(string action,JsonObject? args=null)=>core.Call(action,args);
     internal Task RefreshData()=>Refresh();
+    internal void RefreshInBackground(){if(!busy&&!closed)_=Run(Refresh);}
+    internal void SetPanelHeight(double height)=>Shell.SetPanelHeight(height);
     internal Task SyncNow()=>Action("sync");
     internal bool CanUnlock=>status["exists"]?.GetValue<bool>()==true&&DeviceSecret.Read()!=null;
     internal async Task UnlockDevice(){var secret=DeviceSecret.Read()??throw new IOException(L10n.Text("请输入原资料库口令"));await core.Call("unlock",new(){["passphrase"]=secret});await Refresh();if(!AccountReady)throw new IOException(L10n.Text("请重新登录账户"));loginWindow?.Close();Shell.ShowPanel();}
     internal async Task LockVault(){previewWindow?.Close();thumbnails.Clear();thumbnailEpoch++;await Action("lock");Shell.HidePanel();ShowLogin();}
     internal async Task ToggleCapture(){var config=status["config"] as JsonObject??new();await SaveConfig(new(){["captureEnabled"]=config["captureEnabled"]?.GetValue<bool>()!=true});}
     internal async Task SaveConfig(JsonObject values){await core.Call("config",new(){["values"]=values});await Refresh();}
-    internal void OpenSettings(){Shell.HidePanel();settingsWindow??=new SettingsWindow(this);settingsWindow.Activate();}
+    internal void OpenSettings(){
+        try{settingsWindow??=new SettingsWindow(this);settingsWindow.AppWindow.Show();settingsWindow.Activate();Shell.ActivateWindow(settingsWindow);Shell.HidePanel();}
+        catch(Exception failure){UiDiagnostics.Record("open-settings",failure);settingsWindow=null;SetNotice(L10n.Text(failure.Message));if(AccountReady)Shell.ShowPanel();else ShowLogin();}
+    }
     internal void SettingsClosed(){settingsWindow=null;}
     internal void ShowLogin(){if(closed)return;Shell.HidePanel();loginWindow??=new LoginWindow(this);loginWindow.Activate();}
     internal void LoginClosed(){loginWindow=null;}
@@ -95,10 +100,10 @@ public sealed partial class MainWindow : Window {
             }
             await CaptureClipboard();
         }
-        if(!AccountReady){thumbnailEpoch++;thumbnails.Clear();previewWindow?.Close();}
+        if(!AccountReady){thumbnailEpoch++;thumbnails.Clear();thumbnailMisses.Clear();historyItems.Clear();visibleClips.Clear();historySignature="";previewWindow?.Close();}
         clips=AccountReady ? (await core.Call("list") as JsonArray ?? new()).OfType<JsonObject>().ToList() : new();
-        if(body.Children.Count==0||wasUnlocked!=AccountReady||renderedGroups!=(status["groups"]?.ToJsonString()??"")) Render();
-        else { UpdateSyncIndicator(); if(AppWindow.IsVisible)RenderHistory(); }
+        if(body.Children.Count==0||wasUnlocked!=AccountReady) Render();
+        else { UpdateSyncIndicator();if(AppWindow.IsVisible){if(renderedGroups!=(status["groups"]?.ToJsonString()??""))UpdateGroups();RenderHistory();} }
         if(wasUnlocked&&!AccountReady){settingsWindow?.Close();ShowLogin();}
         if(AccountReady&&loginWindow!=null&&!loginWindow.IsBusy){loginWindow.Close();Shell.ShowPanel();}
         StateChanged?.Invoke();
@@ -142,6 +147,11 @@ public sealed partial class MainWindow : Window {
         return result;
     }
     internal Task ShowAuthorization()=>Authorization();
+    internal async Task ImportRecoveryFile(){var picker=new FileOpenPicker();picker.FileTypeFilter.Add(".json");InitializeWithWindow.Initialize(picker,WindowNative.GetWindowHandle(DialogOwner));var file=await picker.PickSingleFileAsync();if(file!=null){await core.Call("importRecovery",new(){["text"]=await Windows.Storage.FileIO.ReadTextAsync(file),["passphrase"]=DeviceSecret.GetOrCreate()});await Refresh();}}
+    internal async Task ExportRecoveryFile()=>await SaveRecovery(await core.Call("exportRecovery",new(){["passphrase"]=DeviceSecret.GetOrCreate()}) as JsonObject);
+    internal async Task ScanAuthorization(){var scanned=await AuthorizationScanner.ScanAsync(DialogRoot);if(scanned==null)return;if(scanned.StartsWith("cliper-pair-v1:")){await core.Call("approvePairingQR",new(){["text"]=scanned,["passphrase"]=DeviceSecret.GetOrCreate()});await Dialog(L10n.Text("授权成功"),Palette.Text(L10n.Text("新设备将自动连接并同步。")),L10n.Text("完成"));}else await AuthorizeCode(scanned);}
+    internal async Task AuthorizeCode(string text){var code=AuthorizationCode.Normalize(text)??throw new IOException(L10n.Text("请输入完整的 12 位授权码"));var request=await core.Call("inspectPairing",new(){["code"]=code}) as JsonObject??new();var fingerprint=Str(request,"fingerprint");if(await Dialog(L10n.Text("核对请求设备指纹"),Palette.Text(Str(request,"kind")+"\n"+fingerprint+L10n.Text("\n仅当请求设备显示相同指纹时授权。")),L10n.Text("指纹一致，授权"))==ContentDialogResult.Primary)await core.Call("approvePairing",new(){["code"]=code,["text"]=fingerprint,["passphrase"]=DeviceSecret.GetOrCreate()});}
+
     internal Task ShowDevices()=>Devices();
     async Task Authorization() {
         pairing=status["pendingPairing"] as JsonObject ?? pairing;

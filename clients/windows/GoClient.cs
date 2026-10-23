@@ -6,6 +6,7 @@ namespace ClipWeave;
 public sealed class BridgeException(string message,JsonObject? payload) : IOException(L10n.Text(message)) { public JsonObject? Payload {get;}=payload; }
 public sealed class GoClient : IAsyncDisposable {
     readonly Process process;
+    readonly BoundedLineReader replies;
     readonly SemaphoreSlim serial = new(1,1);
     public GoClient() {
         var directory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"ClipWeave","vault");
@@ -16,10 +17,12 @@ public sealed class GoClient : IAsyncDisposable {
         };
         start.ArgumentList.Add("--vault-dir"); start.ArgumentList.Add(directory);
         process=Process.Start(start) ?? throw new IOException(L10n.Text("无法启动 Go 核心"));
+        replies=new BoundedLineReader(process.StandardOutput);
         // Drain diagnostics without retaining potentially sensitive process output.
         process.ErrorDataReceived += (_,_)=>{}; process.BeginErrorReadLine();
     }
-    public async Task<JsonNode?> Call(string action, JsonObject? args=null) {
+    public Task<JsonNode?> Call(string action,JsonObject? args=null)=>Task.Run(()=>CallInBackground(action,args));
+    async Task<JsonNode?> CallInBackground(string action,JsonObject? args) {
         await serial.WaitAsync();
         try {
             var id=Guid.NewGuid().ToString(); args ??= new();
@@ -32,22 +35,13 @@ public sealed class GoClient : IAsyncDisposable {
             // A lost response terminates the pipe so stale replies cannot be mistaken for new requests.
             using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(120));
             string raw;
-            try { raw=await ReadBoundedLine(process.StandardOutput,64*1024*1024,timeout.Token); }
+            try { raw=await replies.ReadAsync(64*1024*1024,timeout.Token); }
             catch { if(!process.HasExited) process.Kill(); throw; }
             var response=JsonNode.Parse(raw)?.AsObject() ?? throw new IOException(L10n.Text("Go 核心返回了无效响应"));
             if(response["id"]?.GetValue<string>()!=id) throw new IOException(L10n.Text("Go 核心响应序号不匹配"));
             if(response["ok"]?.GetValue<bool>()!=true) throw new BridgeException(response["error"]?.GetValue<string>() ?? L10n.Text("操作失败"),response["data"]?.DeepClone() as JsonObject);
             return response["data"]?.DeepClone();
         } finally { serial.Release(); }
-    }
-    static async Task<string> ReadBoundedLine(StreamReader reader,int limit,CancellationToken token) {
-        var output=new StringBuilder(); var one=new char[1];
-        while(true) {
-            if(await reader.ReadAsync(one.AsMemory(),token)==0) throw new EndOfStreamException(L10n.Text("Go 核心已退出"));
-            if(one[0]=='\n') return output.ToString();
-            if(output.Length>=limit) throw new IOException(L10n.Text("Go 核心响应过大"));
-            output.Append(one[0]);
-        }
     }
     public async ValueTask DisposeAsync() {
         await serial.WaitAsync();

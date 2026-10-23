@@ -7,6 +7,9 @@
   <ItemGroup>
     <Compile Include="../windows/AuthorizationCode.cs" Link="AuthorizationCode.cs" />
     <Compile Include="../windows/ClipPresentation.cs" Link="ClipPresentation.cs" />
+    <Compile Include="../windows/BoundedLineReader.cs" Link="BoundedLineReader.cs" />
+    <Compile Include="../windows/HistoryUpdates.cs" Link="HistoryUpdates.cs" />
+    <Compile Include="../windows/SettingsValues.cs" Link="SettingsValues.cs" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
   </ItemGroup>
 </Project>

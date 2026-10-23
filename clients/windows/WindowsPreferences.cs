@@ -1,6 +1,7 @@
 using System.Text.Json;
 namespace ClipWeave;
 sealed class WindowsPreferences {
+    public double PanelHeight {get;set;}=430;
     public bool Pinned {get;set;}
     public bool ShowTray {get;set;}=true;
     public HashSet<string> AppliedDefaults {get;set;}=[];

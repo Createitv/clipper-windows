@@ -68,20 +68,10 @@ if($Architecture -eq 'x64') {
     } finally {$process.Dispose()}
 }
 
-# Exercise the packaged GUI startup in the ephemeral runner's fresh profile.
-# This checks activation/XAML/dependency loading; clipboard/camera still need hardware QA.
+# Run real settings activation/navigation and resident-lifetime checks in a fresh hosted profile.
 if($Architecture -eq 'x64') {
-    $gui=Start-Process (Join-Path $publish 'Clipper.exe') -ArgumentList '--settings' -PassThru
-    try {
-        Start-Sleep -Seconds 12
-        $gui.Refresh()
-        if($gui.HasExited){throw "Clipper GUI exited during startup: $($gui.ExitCode)"}
-        if($gui.MainWindowTitle -notmatch 'Settings|设置'){throw "Settings window did not open: $($gui.MainWindowTitle)"}
-        "Settings startup survived; window title: $($gui.MainWindowTitle)" | Write-Output
-    } finally {
-        if(-not $gui.HasExited){Stop-Process -Id $gui.Id -Force}
-        Get-Process -Name 'clipweave-core' -ErrorAction SilentlyContinue | Stop-Process -Force
-    }
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'ui-check.ps1') -Executable (Join-Path $publish 'Clipper.exe') -OutputDirectory (Join-Path $artifacts 'ui-checks')
+    if($LASTEXITCODE -ne 0){throw 'Settings UI and lifetime checks failed'}
 }
 
 @"

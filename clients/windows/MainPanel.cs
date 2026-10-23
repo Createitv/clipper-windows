@@ -8,6 +8,8 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Automation;
 using Windows.System;
 using System.Text.Json.Nodes;
+using System.Collections.ObjectModel;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace ClipWeave;
 static class Palette {
@@ -25,6 +27,9 @@ public sealed partial class MainWindow {
     readonly TextBlock countLabel=Palette.Text("",11);
     readonly TextBlock syncLabel=Palette.Text("",11);
     readonly Dictionary<string,BitmapImage> thumbnails=new();
+    readonly ObservableCollection<JsonObject> historyItems=new();
+    readonly HashSet<string> loadingThumbnails=new(),thumbnailMisses=new();
+    readonly SemaphoreSlim thumbnailWork=new(1,1);
     int thumbnailEpoch;
     string renderedGroups="";
     string historySignature="";
@@ -45,19 +50,17 @@ public sealed partial class MainWindow {
         search.TextChanged-=FilterChanged;search.TextChanged+=FilterChanged;Grid.SetColumn(search,2);toolbar.Children.Add(search);
         var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=5};Grid.SetColumn(actions,3);toolbar.Children.Add(actions);
         var sync=Palette.Icon("\uE72C","立即同步",()=>_=Run(SyncNow));sync.IsEnabled=AccountReady;actions.Children.Add(sync);
-        var pin=Palette.Icon("\uE718","固定工具栏",()=>{Preferences.Pinned=!Preferences.Pinned;Preferences.Save();Render();});pin.Foreground=Preferences.Pinned?Palette.Blue:Palette.Muted;actions.Children.Add(pin);
+        var pin=Palette.Icon("\uE718","固定工具栏",()=>{});pin.Click+=(_,_)=>{Preferences.Pinned=!Preferences.Pinned;Preferences.Save();pin.Foreground=Preferences.Pinned?Palette.Blue:Palette.Muted;};pin.Foreground=Preferences.Pinned?Palette.Blue:Palette.Muted;actions.Children.Add(pin);
         var add=Palette.Icon("\uE710","添加",()=>{});var menu=new MenuFlyout();
         MenuItem(menu,"添加文字…",()=>_=Run(AddText));MenuItem(menu,"导入文件…",()=>_=Run(ImportFile));MenuItem(menu,"导入文件夹…",()=>_=Run(ImportFolder));menu.Items.Add(new MenuFlyoutSeparator());
         MenuItem(menu,(status["config"] as JsonObject)?["captureEnabled"]?.GetValue<bool>()==true?"暂停采集":"启用采集",()=>_=Run(ToggleCapture));MenuItem(menu,"锁定资料库",()=>_=Run(LockVault));TrackMenu(menu);add.Flyout=menu;add.IsEnabled=AccountReady;actions.Children.Add(add);
         actions.Children.Add(Palette.Icon("\uE713","设置",OpenSettings));
         body.Children.Add(toolbar);
         var navigation=new Grid{Padding=new Thickness(22,0,22,0),BorderBrush=Palette.Border,BorderThickness=new Thickness(0,1,0,1)};navigation.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});navigation.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});Grid.SetRow(navigation,1);body.Children.Add(navigation);
-        groupStrip.Children.Clear();GroupButton("最近复制","");GroupButton("收藏","★");
-        foreach(var group in (status["groups"] as JsonArray??new()).Select(x=>x?.ToString()??"").Where(x=>x.Length>0))GroupButton(group,group,false);
-        groupStrip.Children.Add(Palette.Icon("\uE710","创建分组",()=>_=Run(()=>MoveClip(null))));
+        UpdateGroups();
         navigation.Children.Add(new ScrollViewer{Content=groupStrip,HorizontalScrollBarVisibility=ScrollBarVisibility.Hidden,VerticalScrollBarVisibility=ScrollBarVisibility.Disabled});
-        var kinds=new MenuFlyout();foreach(var kind in new[]{"","text","link","image","file","folder","code","svg"}){var selected=kind;MenuItem(kinds,kind==""?"全部类型":ClipPresentation.KindLabel(kind),()=>{activeKind=selected;Render();});}TrackMenu(kinds);
-        var filter=new Button{Content=activeKind==""?L10n.Text("全部类型"):ClipPresentation.KindLabel(activeKind),Flyout=kinds,Background=Palette.White,BorderThickness=new Thickness(0),VerticalAlignment=VerticalAlignment.Center};Grid.SetColumn(filter,1);navigation.Children.Add(filter);
+        Button? filter=null;var kinds=new MenuFlyout();foreach(var kind in new[]{"","text","link","image","file","folder","code","svg"}){var selected=kind;MenuItem(kinds,kind==""?"全部类型":ClipPresentation.KindLabel(kind),()=>{activeKind=selected;if(filter!=null)filter.Content=selected==""?L10n.Text("全部类型"):ClipPresentation.KindLabel(selected);RenderHistory(true);});}TrackMenu(kinds);
+        filter=new Button{Content=activeKind==""?L10n.Text("全部类型"):ClipPresentation.KindLabel(activeKind),Flyout=kinds,Background=Palette.White,BorderThickness=new Thickness(0),VerticalAlignment=VerticalAlignment.Center};Grid.SetColumn(filter,1);navigation.Children.Add(filter);
         var content=new Grid{Padding=new Thickness(6,10,6,10)};Grid.SetRow(content,2);body.Children.Add(content);
         if(!AccountReady)content.Children.Add(EmptyState(true));
         else {
@@ -71,28 +74,36 @@ public sealed partial class MainWindow {
         body.KeyDown-=PanelKeyDown;body.KeyDown+=PanelKeyDown;
         historySignature="";RenderHistory();UpdateSyncIndicator();
     }
+    void UpdateGroups(){
+        renderedGroups=status["groups"]?.ToJsonString()??"";
+        groupStrip.Children.Clear();GroupButton("最近复制","");GroupButton("收藏","★");
+        foreach(var group in (status["groups"] as JsonArray??new()).Select(x=>x?.ToString()??"").Where(x=>x.Length>0))GroupButton(group,group,false);
+        groupStrip.Children.Add(Palette.Icon("\uE710","创建分组",()=>_=Run(()=>MoveClip(null))));
+    }
     static void Detach(FrameworkElement element){if(element.Parent is Panel panel)panel.Children.Remove(element);else if(element.Parent is ScrollViewer scroll)scroll.Content=null;else if(element.Parent is ContentControl host)host.Content=null;}
     void ConfigureHistory() {
         if(historyConfigured)return;historyConfigured=true;
-        history.SelectionMode=ListViewSelectionMode.Single;history.IsItemClickEnabled=true;history.Background=Palette.White;
-        history.ItemsPanel=(ItemsPanelTemplate)XamlReader.Load("<ItemsPanelTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'><ItemsStackPanel Orientation='Horizontal'/></ItemsPanelTemplate>");
+        history.SelectionMode=ListViewSelectionMode.Single;history.IsItemClickEnabled=true;history.Background=Palette.White;history.ItemsSource=historyItems;history.ItemContainerTransitions=new TransitionCollection();
+        history.ItemsPanel=(ItemsPanelTemplate)XamlReader.Load("<ItemsPanelTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'><ItemsStackPanel Orientation='Horizontal' ItemsUpdatingScrollMode='KeepItemsInView'/></ItemsPanelTemplate>");
         history.ItemTemplate=(DataTemplate)XamlReader.Load("<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'><Border Width='226' Margin='6,0,6,0'/></DataTemplate>");
         history.ItemContainerStyle=new Style(typeof(ListViewItem));history.ItemContainerStyle.Setters.Add(new Setter(Control.PaddingProperty,new Thickness(0)));history.ItemContainerStyle.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty,HorizontalAlignment.Stretch));
+        ScrollViewer.SetHorizontalScrollMode(history,ScrollMode.Enabled);ScrollViewer.SetVerticalScrollMode(history,ScrollMode.Disabled);ScrollViewer.SetIsHorizontalRailEnabled(history,true);
+        history.AddHandler(UIElement.PointerWheelChangedEvent,new PointerEventHandler(HistoryWheel),true);
         ScrollViewer.SetHorizontalScrollBarVisibility(history,ScrollBarVisibility.Hidden);ScrollViewer.SetVerticalScrollBarVisibility(history,ScrollBarVisibility.Disabled);
         history.ContainerContentChanging+=(_,e)=>{if(e.InRecycleQueue)return;if(e.ItemContainer.ContentTemplateRoot is Border root&&e.Item is JsonObject clip){root.Child=Card(clip);}else e.RegisterUpdateCallback((_,next)=>{if(!next.InRecycleQueue&&next.Item is JsonObject value&&next.ItemContainer.ContentTemplateRoot is Border border)border.Child=Card(value);});};
         history.SelectionChanged+=(_,_)=>{if(history.SelectedItem is JsonObject clip)selectedClipId=Str(clip,"id");};
         history.DoubleTapped+=(_,_)=>{if(history.SelectedItem is JsonObject clip)_=Run(()=>CopyClip(clip));};
     }
-    void RenderHistory() {
+    void RenderHistory(bool resetScroll=false) {
         if(!AccountReady){countLabel.Text=L10n.Text("资料库已锁定");return;}
         var list=clips.Where(c=>ClipPresentation.Matches(c,search.Text,activeGroup,activeKind)).ToList();
-        countLabel.Text=L10n.Template("{0} 条记录",list.Count);visibleClips=list;
-        var signature=search.Text+"|"+activeGroup+"|"+activeKind+"|"+string.Join(";",list.Select(c=>Str(c,"id")+Str(c,"version")+Str(c,"favourite")+Str(c,"group")));
+        countLabel.Text=L10n.Template("{0} 条记录",list.Count);
+        var signature=search.Text+"|"+activeGroup+"|"+activeKind+"|"+string.Join(";",list.Select(c=>Str(c,"id")+Str(c,"version")+Str(c,"favourite")+Str(c,"group")+Str(c,"localAvailable")));
         if(signature==historySignature)return;historySignature=signature;
-        var scroll=FindScroll(history);var offset=scroll?.HorizontalOffset??0;
-        history.ItemsSource=list;
-        history.SelectedItem=list.FirstOrDefault(c=>Str(c,"id")==selectedClipId)??list.FirstOrDefault();
-        DispatcherQueue.TryEnqueue(()=>FindScroll(history)?.ChangeView(offset,null,null,true));
+        HistoryUpdates.Apply(historyItems,list);visibleClips=historyItems.ToList();
+        var selected=historyItems.FirstOrDefault(c=>Str(c,"id")==selectedClipId)??historyItems.FirstOrDefault();
+        if(!ReferenceEquals(history.SelectedItem,selected))history.SelectedItem=selected;
+        if(resetScroll)DispatcherQueue.TryEnqueue(()=>FindScroll(history)?.ChangeView(0,null,null,true));
         if(list.Count==0)history.Footer=EmptyState(false);else history.Footer=null;
     }
     Border Card(JsonObject clip) {
@@ -112,7 +123,21 @@ public sealed partial class MainWindow {
         border.PointerPressed+=(_,_)=>{history.SelectedItem=clip;};return border;
     }
     async Task LoadThumbnail(JsonObject clip,Image target) {
-        var epoch=thumbnailEpoch;try{var value=await core.Call("preview",new(){["clipId"]=Str(clip,"id")}) as JsonObject;if(value?["bytes"] is not null){var image=await DecodeImage(Convert.FromBase64String(Str(value,"bytes")));if(!AccountReady||epoch!=thumbnailEpoch)return;if(thumbnails.Count>128)thumbnails.Clear();thumbnails[Str(clip,"id")]=image;target.Source=image;}}catch{ /* The preview action offers the full error and retry. */ }
+        var id=Str(clip,"id");var stamp=id+Str(clip,"version")+Str(clip,"localAvailable");var epoch=thumbnailEpoch;
+        if(thumbnailMisses.Contains(stamp)||!loadingThumbnails.Add(id))return;
+        await thumbnailWork.WaitAsync();
+        try{
+            if(!AccountReady||epoch!=thumbnailEpoch)return;
+            // Local-only: scrolling must never start a cloud attachment download.
+            var value=await core.Call("thumbnail",new(){["clipId"]=id}) as JsonObject;
+            if(value?["bytes"] is null)return;
+            var bytes=await Task.Run(()=>Convert.FromBase64String(Str(value,"bytes")));
+            var image=await DecodeImage(bytes,320);
+            if(!AccountReady||epoch!=thumbnailEpoch)return;
+            if(thumbnails.Count>=128)thumbnails.Remove(thumbnails.Keys.First());
+            thumbnails[id]=image;target.Source=image;
+        }catch{if(epoch==thumbnailEpoch)thumbnailMisses.Add(stamp);}
+        finally{loadingThumbnails.Remove(id);thumbnailWork.Release();}
     }
     MenuFlyout ClipMenu(JsonObject clip) {
         var menu=new MenuFlyout();
@@ -122,9 +147,9 @@ public sealed partial class MainWindow {
     }
     void MenuItem(MenuFlyout menu,string text,System.Action action){var item=new MenuFlyoutItem{Text=L10n.Text(text)};item.Click+=(_,_)=>action();menu.Items.Add(item);}
     void TrackMenu(MenuFlyout menu){menu.Opening+=(_,_)=>Shell.MenuOpen=true;menu.Closed+=(_,_)=>Shell.MenuOpen=false;}
-    void GroupButton(string title,string value,bool translate=true){var label=Palette.Text(translate?L10n.Text(title):title,13,activeGroup==value);label.Foreground=activeGroup==value?Palette.Blue:Palette.Muted;var b=new Button{Content=new Border{Child=label,Padding=new Thickness(12,13,12,13),BorderBrush=activeGroup==value?Palette.Blue:Palette.White,BorderThickness=new Thickness(0,0,0,2)},Background=Palette.White,BorderThickness=new Thickness(0),Padding=new Thickness(0)};b.Click+=(_,_)=>{activeGroup=value;Render();};groupStrip.Children.Add(b);}
+    void GroupButton(string title,string value,bool translate=true){var label=Palette.Text(translate?L10n.Text(title):title,13,activeGroup==value);label.Foreground=activeGroup==value?Palette.Blue:Palette.Muted;var b=new Button{Content=new Border{Child=label,Padding=new Thickness(12,13,12,13),BorderBrush=activeGroup==value?Palette.Blue:Palette.White,BorderThickness=new Thickness(0,0,0,2)},Background=Palette.White,BorderThickness=new Thickness(0),Padding=new Thickness(0)};b.Click+=(_,_)=>{activeGroup=value;UpdateGroups();RenderHistory(true);};groupStrip.Children.Add(b);}
     FrameworkElement EmptyState(bool locked){var p=new StackPanel{Spacing=12,VerticalAlignment=VerticalAlignment.Center,HorizontalAlignment=HorizontalAlignment.Center,MaxWidth=400};p.Children.Add(Palette.Text(L10n.Text(locked?"你的剪贴板已安全锁定":search.Text.Length>0||activeGroup.Length>0?"没有找到匹配记录":"留住每一次灵感"),20,true));p.Children.Add(Palette.Text(L10n.Text(locked?"解锁后查看记录并继续同步":"开启采集后复制一段文字，或从这里添加内容。")));p.Children.Add(Button(L10n.Text(locked?"登录 Clipper":"添加文字"),locked?Connect:AddText));return p;}
-    void FilterChanged(object sender,TextChangedEventArgs args)=>RenderHistory();
+    void FilterChanged(object sender,TextChangedEventArgs args)=>RenderHistory(true);
     void UpdateSyncIndicator(){state.Text=L10n.Text(Str(status,"status",L10n.Text("等待云端连接")));syncLabel.Text=state.Text;}
     void PanelKeyDown(object sender,KeyRoutedEventArgs e) {
         if(e.Key==VirtualKey.Escape){if(previewWindow!=null)previewWindow.Close();else if(search.Text.Length>0)search.Text="";else Shell.HidePanel(true);e.Handled=true;return;}
@@ -132,6 +157,11 @@ public sealed partial class MainWindow {
         if(FocusManager.GetFocusedElement(body.XamlRoot) is TextBox or PasswordBox or RichEditBox)return;
         if(e.Key is VirtualKey.Left or VirtualKey.Right){history.SelectedIndex=Math.Clamp(history.SelectedIndex+(e.Key==VirtualKey.Right?1:-1),0,Math.Max(0,visibleClips.Count-1));if(history.SelectedItem!=null)history.ScrollIntoView(history.SelectedItem);e.Handled=true;}
         if(history.SelectedItem is JsonObject clip&&e.Key is VirtualKey.Enter or VirtualKey.Space){_=Run(()=>e.Key==VirtualKey.Enter?CopyClip(clip):PreviewClip(clip));e.Handled=true;}
+    }
+    void HistoryWheel(object sender,PointerRoutedEventArgs e){
+        var point=e.GetCurrentPoint(history);if(point.Properties.IsHorizontalMouseWheel)return;
+        var scroll=FindScroll(history);if(scroll==null||scroll.ScrollableWidth<=0)return;
+        scroll.ChangeView(Math.Clamp(scroll.HorizontalOffset-point.Properties.MouseWheelDelta*1.8,0,scroll.ScrollableWidth),null,null,true);e.Handled=true;
     }
     void Page(int direction){var scroll=FindScroll(history);if(scroll!=null)scroll.ChangeView(Math.Max(0,scroll.HorizontalOffset+direction*scroll.ViewportWidth*.85),null,null);}
     static ScrollViewer? FindScroll(DependencyObject root){if(root is ScrollViewer s)return s;for(var i=0;i<VisualTreeHelper.GetChildrenCount(root);i++){var found=FindScroll(VisualTreeHelper.GetChild(root,i));if(found!=null)return found;}return null;}

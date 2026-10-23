@@ -16,10 +16,12 @@ public static class ClipPresentation {
         if(kind!=""&&Kind(clip)!=kind)return false;
         return string.IsNullOrWhiteSpace(query)||string.Join(" ",new[]{Text(clip,"title"),Text(clip,"text"),Text(clip,"name"),Text(clip,"group")}).Contains(query,StringComparison.OrdinalIgnoreCase);
     }
-    public static PanelRectangle PanelBounds(int left,int top,int width,int height,double scale) {
+    public static PanelRectangle PanelBounds(int left,int top,int width,int height,double scale,double requestedHeight=430) {
         if(!double.IsFinite(scale)||scale<=0)scale=1;
+        if(!double.IsFinite(requestedHeight))requestedHeight=430;
+        requestedHeight=Math.Clamp(requestedHeight,300,760);
         var gap=Math.Min((int)Math.Round(12*scale),Math.Max(0,Math.Min(width,height)/4));
-        return new(left+gap,top+height-gap-Math.Min((int)Math.Round(430*scale),Math.Max(1,height-2*gap)),Math.Max(1,width-2*gap),Math.Min((int)Math.Round(430*scale),Math.Max(1,height-2*gap)));
+        return new(left+gap,top+height-gap-Math.Min((int)Math.Round(requestedHeight*scale),Math.Max(1,height-2*gap)),Math.Max(1,width-2*gap),Math.Min((int)Math.Round(requestedHeight*scale),Math.Max(1,height-2*gap)));
     }
     public static bool IsSensitiveFormat(string value)=>new[]{"ExcludeClipboardContentFromMonitorProcessing","Clipboard Viewer Ignore","com.agilebits.onepassword","org.nspasteboard.ConcealedType","org.clipweave.own-write"}.Contains(value,StringComparer.OrdinalIgnoreCase);
     public static string Size(JsonObject clip) {

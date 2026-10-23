@@ -8,6 +8,7 @@ using WinRT.Interop;
 using WinUIEx;
 using WinUIEx.Messaging;
 using Windows.Graphics;
+using Microsoft.UI.Xaml.Input;
 
 namespace ClipWeave;
 
@@ -20,7 +21,9 @@ sealed class WindowsShell : IDisposable {
     TaskbarIcon? tray;
     System.Drawing.Icon? icon;
     IntPtr previous;
-    bool exiting;
+    bool exiting,resizing;
+    int resizeStartY;double resizeStartHeight,resizeScale=1;
+    readonly Microsoft.UI.Dispatching.DispatcherQueueTimer saveHeight;
     public bool MenuOpen { get; set; }
     public bool HotkeyAvailable { get; }
     public static bool ControlDown=>(GetAsyncKeyState(0x11)&0x8000)!=0;
@@ -29,8 +32,19 @@ sealed class WindowsShell : IDisposable {
         window.AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory,"Assets","cliper-tray-black.ico"));
         window.SetIsShownInSwitchers(false);window.SetIsAlwaysOnTop(true);window.SetIsResizable(false);
         if(window.AppWindow.Presenter is OverlappedPresenter presenter)presenter.SetBorderAndTitleBar(false,false);
+        WindowAppearance.Apply(window);
+        saveHeight=window.DispatcherQueue.CreateTimer();saveHeight.Interval=TimeSpan.FromMilliseconds(400);
+        saveHeight.Tick+=(_,_)=>{saveHeight.Stop();try{window.Preferences.Save();}catch(Exception error){UiDiagnostics.Record("save-panel-height",error);}};
+        var grip=new Border{Width=100,Height=10,VerticalAlignment=VerticalAlignment.Top,HorizontalAlignment=HorizontalAlignment.Center,Background=Palette.White,Child=new Border{Width=38,Height=3,CornerRadius=new CornerRadius(2),Background=Palette.Muted,VerticalAlignment=VerticalAlignment.Center}};
+        ToolTipService.SetToolTip(grip,L10n.Text("拖动调整高度，面板始终贴底"));
+        grip.PointerPressed+=(_,e)=>{if(!e.GetCurrentPoint(grip).Properties.IsLeftButtonPressed&&e.Pointer.PointerDeviceType==Microsoft.UI.Input.PointerDeviceType.Mouse)return;GetCursorPos(out var point);resizeStartY=point.Y;resizeStartHeight=window.Preferences.PanelHeight;resizeScale=Math.Max(1,GetDpiForWindow(hwnd)/96.0);resizing=grip.CapturePointer(e.Pointer);e.Handled=true;};
+        grip.PointerMoved+=(_,e)=>{if(!resizing)return;GetCursorPos(out var point);SetPanelHeight(resizeStartHeight+(resizeStartY-point.Y)/resizeScale);e.Handled=true;};
+        grip.PointerReleased+=(_,e)=>{resizing=false;grip.ReleasePointerCapture(e.Pointer);e.Handled=true;};grip.PointerCaptureLost+=(_,_)=>resizing=false;
+        window.Root.Children.Add(grip);
         messages=new WindowMessageMonitor(window);
         messages.WindowMessageReceived+=(_,e)=>{
+            if((uint)e.Message.MessageId==0x0014){WindowAppearance.PaintWhite(hwnd,(IntPtr)e.Message.WParam);e.Handled=true;e.Result=1;}
+            if((uint)e.Message.MessageId==0x02E0&&window.AppWindow.IsVisible)window.DispatcherQueue.TryEnqueue(()=>Position(false));
             if((uint)e.Message.MessageId==0x0312){e.Handled=true;Toggle();}
             if((uint)e.Message.MessageId==0x007E&&window.AppWindow.IsVisible)Position();
         };
@@ -48,17 +62,20 @@ sealed class WindowsShell : IDisposable {
         if(!window.AccountReady){window.ShowLogin();return;}
         var front=GetForegroundWindow();if(front!=IntPtr.Zero&&front!=hwnd){GetWindowThreadProcessId(front,out var pid);if(pid!=(uint)Environment.ProcessId)previous=front;}
         Position();window.AppWindow.Show();window.Activate();SetForegroundWindow(hwnd);window.FocusSearch();
-        _=window.Execute(async()=>{await window.RefreshData();await window.SyncNow();});
+        window.RefreshInBackground();
     }
     public void HidePanel(bool restore=false) {window.AppWindow.Hide();if(restore&&IsWindow(previous))SetForegroundWindow(previous);}
-    public void Position() {
+    public void Position(bool followPointer=true) {
         GetCursorPos(out var point);
-        var area=DisplayArea.GetFromPoint(new PointInt32(point.X,point.Y),DisplayAreaFallback.Nearest).WorkArea;
+        var area=(followPointer?DisplayArea.GetFromPoint(new PointInt32(point.X,point.Y),DisplayAreaFallback.Nearest):DisplayArea.GetFromWindowId(window.AppWindow.Id,DisplayAreaFallback.Nearest)).WorkArea;
         var monitor=MonitorFromPoint(point,2);uint dpi=96;
         if(GetDpiForMonitor(monitor,0,out var x,out _) == 0)dpi=x;
-        var box=ClipPresentation.PanelBounds(area.X,area.Y,area.Width,area.Height,dpi/96.0);
+        if(!followPointer)dpi=GetDpiForWindow(hwnd);
+        var box=ClipPresentation.PanelBounds(area.X,area.Y,area.Width,area.Height,dpi/96.0,window.Preferences.PanelHeight);
         window.AppWindow.MoveAndResize(new RectInt32(box.X,box.Y,box.Width,box.Height));
     }
+    public void ActivateWindow(Window target)=>SetForegroundWindow(WindowNative.GetWindowHandle(target));
+    public void SetPanelHeight(double height){window.Preferences.PanelHeight=double.IsFinite(height)?Math.Clamp(height,300,760):430;Position(false);saveHeight.Stop();saveHeight.Start();}
     public void SetTrayVisible(bool visible) {
         if(!visible){if(tray!=null){window.Root.Children.Remove(tray);tray.Dispose();tray=null;icon?.Dispose();icon=null;}return;}
         if(tray!=null || window.Root.XamlRoot==null)return;
@@ -84,7 +101,7 @@ sealed class WindowsShell : IDisposable {
     }
     static INPUT Key(ushort code,bool up)=>new(){type=1,data=new INPUTDATA{keyboard=new KEYBOARD{virtualKey=code,flags=up?2u:0u}}};
     public void Quit(){exiting=true;window.Close();}
-    public void Dispose(){UnregisterHotKey(hwnd,1);messages.Dispose();tray?.Dispose();icon?.Dispose();}
+    public void Dispose(){saveHeight.Stop();try{window.Preferences.Save();}catch{}UnregisterHotKey(hwnd,1);messages.Dispose();tray?.Dispose();icon?.Dispose();}
     sealed class ShellCommand(Action action):ICommand {
         public bool CanExecute(object? parameter)=>true;
         public void Execute(object? parameter)=>action();
@@ -99,6 +116,7 @@ sealed class WindowsShell : IDisposable {
     [DllImport("user32.dll")]static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")]static extern bool SetForegroundWindow(IntPtr hwnd);
     [DllImport("user32.dll")]static extern bool IsWindow(IntPtr hwnd);
+    [DllImport("user32.dll")]static extern uint GetDpiForWindow(IntPtr hwnd);
     [DllImport("user32.dll")]static extern short GetAsyncKeyState(int key);
     [DllImport("user32.dll")]static extern bool GetCursorPos(out POINT point);
     [DllImport("user32.dll")]static extern IntPtr MonitorFromPoint(POINT point,uint flags);

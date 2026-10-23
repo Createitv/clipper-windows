@@ -53,7 +53,7 @@ public sealed partial class MainWindow {
         } else {
             var summary=new StackPanel{Spacing=18,Margin=new Thickness(40)};summary.Children.Add(Palette.Text(Str(clip,"name",Str(clip,"title")),20,true));summary.Children.Add(Palette.Text(ClipPresentation.Size(clip)));if(ClipPresentation.Kind(clip)=="folder"||new[]{".png",".jpg",".jpeg",".gif",".webp",".bmp",".pdf",".txt",".md",".mp3",".mp4",".wav",".mov"}.Contains(Path.GetExtension(SafeName(clip)).ToLowerInvariant()))summary.Children.Add(Button(L10n.Text("打开附件"),async()=>{var path=await ExportTemporary(clip);if(File.Exists(path))await Windows.System.Launcher.LaunchFileAsync(await StorageFile.GetFileFromPathAsync(path));else await Windows.System.Launcher.LaunchFolderAsync(await StorageFolder.GetFolderFromPathAsync(path));}));summary.Children.Add(Button(L10n.Text("导出…"),()=>ExportClip(clip)));Grid.SetRow(summary,1);root.Children.Add(summary);
         }
-        root.KeyDown+=(_,e)=>{if(e.Key==Windows.System.VirtualKey.Escape){window.Close();e.Handled=true;}};window.Content=root;window.AppWindow.Resize(new Windows.Graphics.SizeInt32(800,600));window.CenterOnScreen();window.Closed+=(_,_)=>{if(previewWindow==window)previewWindow=null;};window.Activate();Shell.HidePanel();
+        root.KeyDown+=(_,e)=>{if(e.Key==Windows.System.VirtualKey.Escape){window.Close();e.Handled=true;}};window.Content=root;WindowAppearance.Apply(window);window.AppWindow.Resize(new Windows.Graphics.SizeInt32(800,600));window.CenterOnScreen();window.Closed+=(_,_)=>{if(previewWindow==window)previewWindow=null;};window.Activate();Shell.HidePanel();
     }
     async Task ExportClip(JsonObject clip) {
         var picker=new Windows.Storage.Pickers.FolderPicker();picker.FileTypeFilter.Add("*");WinRT.Interop.InitializeWithWindow.Initialize(picker,WinRT.Interop.WindowNative.GetWindowHandle(DialogOwner));var folder=await picker.PickSingleFolderAsync();if(folder==null)return;
@@ -66,5 +66,5 @@ public sealed partial class MainWindow {
         form.Children.Add(input);if(await Dialog(L10n.Text(clip==null?"新建分组":"移到分组"),form,L10n.Text("保存"))==ContentDialogResult.Primary)await Action("group",new(){["clipId"]=clip==null?"":Str(clip,"id"),["name"]=input.Text});Render();
     }
     async Task DeleteClip(JsonObject clip){if(await Dialog(L10n.Text("删除这条记录？"),Palette.Text(L10n.Text("删除会同步到已连接的设备，系统剪贴板中的当前内容会保留。")),L10n.Text("删除"))==ContentDialogResult.Primary)await Action("delete",new(){["clipId"]=Str(clip,"id")});}
-    static async Task<BitmapImage> DecodeImage(byte[] bytes){using var stream=new InMemoryRandomAccessStream();using(var writer=new DataWriter(stream)){writer.WriteBytes(bytes);await writer.StoreAsync();writer.DetachStream();}stream.Seek(0);var image=new BitmapImage{DecodePixelWidth=1200};await image.SetSourceAsync(stream);return image;}
+    static async Task<BitmapImage> DecodeImage(byte[] bytes,int width=1200){using var stream=new InMemoryRandomAccessStream();using(var writer=new DataWriter(stream)){writer.WriteBytes(bytes);await writer.StoreAsync();writer.DetachStream();}stream.Seek(0);var image=new BitmapImage{DecodePixelWidth=width};await image.SetSourceAsync(stream);return image;}
 }
