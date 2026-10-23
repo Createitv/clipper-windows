@@ -241,7 +241,7 @@ func (c *Client) status() core.Object {
 }
 func publicConfig(config core.Object) core.Object {
 	out := core.Object{"captureEnabled": false, "captureFiles": false, "directPaste": false, "retentionDays": 0, "excludedApps": "com.1password.1password\ncom.agilebits.onepassword7\ncom.bitwarden.desktop\norg.keepassxc.keepassxc\ncom.apple.Passwords\n1Password.exe\nBitwarden.exe\nKeePassXC.exe"}
-	for _, k := range []string{"captureEnabled", "captureFiles", "directPaste", "retentionDays", "excludedApps", "endpoint", "email", "accountId", "accountName", "sessionExpires", "accountDeletionRequest"} {
+	for _, k := range []string{"captureEnabled", "captureFiles", "directPaste", "retentionDays", "excludedApps", "endpoint", "email", "accountId", "accountName", "sessionExpires", "accountDeletionRequest", "membership"} {
 		if v, ok := config[k]; ok {
 			out[k] = v
 		}
@@ -465,6 +465,15 @@ func (c *Client) dispatch(ctx context.Context, r request) (any, error) {
 		}
 		return nil, c.vault.Export(r.ClipID, r.Path)
 	case "config":
+		if _, changing := r.Values["retentionDays"]; changing {
+			st, err := c.vault.Snapshot()
+			if err != nil {
+				return nil, err
+			}
+			if access, ok := st.Config["membership"].(map[string]any); ok && access["tier"] == "free" {
+				return nil, errors.New("pro_feature_required")
+			}
+		}
 		if err := validateConfig(r.Values); err != nil {
 			return nil, err
 		}

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>Clipper</AssemblyName><RootNamespace>ClipWeave</RootNamespace><Version>0.2.2</Version><AssemblyTitle>Clipper</AssemblyTitle><Product>Clipper</Product><Description>Clipper encrypted clipboard</Description>
+    <AssemblyName>Clipper</AssemblyName><RootNamespace>ClipWeave</RootNamespace><Version>0.3.0</Version><AssemblyTitle>Clipper</AssemblyTitle><Product>Clipper</Product><Description>Clipper encrypted clipboard</Description>
     <OutputType>WinExe</OutputType><TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <UseWinUI>true</UseWinUI><WindowsPackageType>None</WindowsPackageType>
@@ -17,6 +17,7 @@
   <ItemGroup><Content Include="$(ClipWeaveCorePath)" Link="clipweave-core.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup>
     <Content Include="../../assets/brand/cliper-icon-1024.png" Link="Assets/CliperBrand.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../assets/brand/MembershipArtwork.png" Link="Assets/MembershipArtwork.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../assets/brand/LoginArtwork.png" Link="Assets/LoginArtwork.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../assets/brand/menu/cliper-tray-black.ico" Link="Assets/cliper-tray-black.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../assets/brand/menu/cliper-tray-white.ico" Link="Assets/cliper-tray-white.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

@@ -21,6 +21,9 @@ public sealed partial class MainWindow : Window {
     JsonObject status=new();
     List<JsonObject> clips=new();
     bool busy;
+    bool syncing;
+    readonly ErrorSpeaker speaker=new();
+    DateTime noticeUntil;
     bool triedAutoUnlock;
     JsonObject? pairing;
     bool closed;
@@ -39,6 +42,7 @@ public sealed partial class MainWindow : Window {
     SettingsWindow? settingsWindow;
     LoginWindow? loginWindow;
     bool manualLogin;
+    bool deletingAccount;
     Window? previewWindow;
     internal event System.Action? StateChanged;
     internal JsonObject Status=>status;
@@ -51,7 +55,7 @@ public sealed partial class MainWindow : Window {
         Shell=new WindowsShell(this);
         refreshTimer=DispatcherQueue.CreateTimer();refreshTimer.Interval=TimeSpan.FromSeconds(2);
         refreshTimer.Tick+=async(_,_)=>{if(!busy&&!closed)await Run(Refresh);};refreshTimer.Start();
-        Closed+=async(_,_)=>{closed=true;refreshTimer.Stop();Shell.Dispose();settingsWindow?.Close();loginWindow?.Close();previewWindow?.Close();ClearPreviews();await core.DisposeAsync();};
+        Closed+=async(_,_)=>{closed=true;refreshTimer.Stop();Shell.Dispose();speaker.Dispose();settingsWindow?.Close();loginWindow?.Close();previewWindow?.Close();ClearPreviews();await core.DisposeAsync();};
         _=Run(async()=>{await Refresh();if(Environment.GetCommandLineArgs().Contains("--settings"))OpenSettings();else if(AccountReady)Shell.ShowPanel();else ShowLogin();});
     }
     internal Task Execute(Func<Task> operation)=>Run(operation);
@@ -60,14 +64,14 @@ public sealed partial class MainWindow : Window {
         try {
             if(closed)return;busy=true;error.Text="";
             try{await operation();}
-            catch(Exception e){if(e is not BridgeException)UiDiagnostics.Record("main-operation",e);if(e is BridgeException failure&&failure.Payload!=null){await SaveRecovery(failure.Payload);try{await Refresh();}catch{}}error.Text=L10n.Text(e.Message);SetNotice(error.Text);}
+            catch(Exception e){if(e is not BridgeException)UiDiagnostics.Record("main-operation",e);if(e is BridgeException failure&&failure.Payload!=null){await SaveRecovery(failure.Payload);try{await Refresh();}catch{}}error.Text=L10n.Error(e.Message);SetNotice(error.Text);if(Preferences.ErrorSpeech&&DialogOwner.AppWindow.IsVisible)_=speaker.Say(error.Text);}
         } finally{busy=false;operations.Release();StateChanged?.Invoke();}
     }
     internal Task<JsonNode?> CallCore(string action,JsonObject? args=null)=>core.Call(action,args);
     internal Task RefreshData()=>Refresh();
     internal void RefreshInBackground(){if(!busy&&!closed)_=Run(Refresh);}
     internal void SetPanelHeight(double height)=>Shell.SetPanelHeight(height);
-    internal Task SyncNow()=>Action("sync");
+    internal async Task SyncNow(){if(syncing)return;syncing=true;UpdateSyncIndicator();try{await Action("sync");}finally{syncing=false;UpdateSyncIndicator();}}
     internal bool CanUnlock=>status["exists"]?.GetValue<bool>()==true&&DeviceSecret.Read()!=null;
     internal async Task UnlockDevice(){var secret=DeviceSecret.Read()??throw new IOException(L10n.Text("请输入原资料库口令"));await core.Call("unlock",new(){["passphrase"]=secret});await Refresh();if(!AccountReady)throw new IOException(L10n.Text("请重新登录账户"));loginWindow?.Close();Shell.ShowPanel();}
     internal async Task ToggleCapture(){var config=status["config"] as JsonObject??new();await SaveConfig(new(){["captureEnabled"]=config["captureEnabled"]?.GetValue<bool>()!=true});}
@@ -79,16 +83,18 @@ public sealed partial class MainWindow : Window {
     internal void SettingsClosed(){settingsWindow=null;}
     internal void ShowLogin(bool manual=false){if(closed)return;if(manual)manualLogin=true;Shell.HidePanel();loginWindow??=new LoginWindow(this);loginWindow.Activate();}
     internal void LoginClosed(){loginWindow=null;manualLogin=false;}
-    internal void SetNotice(string text){state.Text=text;}
-    internal void FocusSearch(){search.Focus(FocusState.Programmatic);}
+    internal void SetNotice(string text){state.Text=text;noticeUntil=DateTime.UtcNow.AddSeconds(5);}
+    internal void FocusSearch(){searchVisible=true;search.Visibility=Visibility.Visible;search.Focus(FocusState.Programmatic);}
     Button Button(string title,Func<Task> action) { var button=new Button{Content=title}; button.Click+=async (_,_)=>await Run(action);return button; }
     async Task Action(string name,JsonObject? args=null) {await core.Call(name,args);await Refresh();}
-    static string Str(JsonObject value,string key,string fallback="")=> key=="status" ? L10n.Text(value[key]?.ToString() ?? fallback) : value[key]?.ToString() ?? fallback;
+    static string Str(JsonObject value,string key,string fallback="")=> key=="status" ? L10n.ServiceStatus(value[key]?.ToString() ?? fallback) : value[key]?.ToString() ?? fallback;
     bool sessionRemembered;
     internal bool AccountReady => status["unlocked"]?.GetValue<bool>()==true && (status["config"] as JsonObject)?["connected"]?.GetValue<bool>()==true;
     async Task Refresh() {
         var wasUnlocked=AccountReady;
-        status=await core.Call("requireAccount") as JsonObject ?? new();
+        var previousSync=Str(status,"lastSuccessAt");
+        status=await core.Call("requireAccount",new(){["deviceInfo"]=WindowsIdentity.Information()}) as JsonObject ?? new();
+        if(previousSync!=Str(status,"lastSuccessAt")){thumbnailMisses.Clear();RetryVisibleThumbnails();}
         if(!triedAutoUnlock) {triedAutoUnlock=true;if(status["exists"]?.GetValue<bool>()==true&&status["unlocked"]?.GetValue<bool>()!=true&&DeviceSecret.Read() is string pass) {await core.Call("unlock",new(){["passphrase"]=pass});status=await core.Call("status") as JsonObject ?? new();}}
         if(status["unlocked"]?.GetValue<bool>()==true) sessionRemembered=AccountReady;
         if(AccountReady) {
@@ -99,18 +105,19 @@ public sealed partial class MainWindow : Window {
             }
             await CaptureClipboard();
         }
-        if(!AccountReady){thumbnailEpoch++;thumbnails.Clear();thumbnailMisses.Clear();historyItems.Clear();visibleClips.Clear();historySignature="";previewWindow?.Close();}
+        if(!AccountReady){thumbnailEpoch++;thumbnails.Clear();thumbnailMisses.Clear();thumbnailTargets.Clear();historyItems.Clear();visibleClips.Clear();historySignature="";previewWindow?.Close();}
         clips=AccountReady ? (await core.Call("list") as JsonArray ?? new()).OfType<JsonObject>().ToList() : new();
         if(body.Children.Count==0||wasUnlocked!=AccountReady) Render();
         else { UpdateSyncIndicator();if(AppWindow.IsVisible){if(renderedGroups!=(status["groups"]?.ToJsonString()??""))UpdateGroups();RenderHistory();} }
-        if(wasUnlocked&&!AccountReady){settingsWindow?.Close();ShowLogin();}
+        if(wasUnlocked&&!AccountReady&&!deletingAccount){settingsWindow?.Close();ShowLogin();}
         if(AccountReady&&loginWindow!=null&&!loginWindow.IsBusy&&!manualLogin){loginWindow.Close();Shell.ShowPanel();}
         StateChanged?.Invoke();
     }
     internal async Task<ContentDialogResult> Dialog(string title,UIElement content,string primary) {
         dialogDepth++;
-        try{return await new ContentDialog{Title=title,Content=content,PrimaryButtonText=primary,CloseButtonText=L10n.Text("取消"),XamlRoot=DialogRoot}.ShowAsync();}
-        finally{dialogDepth--;}
+        var dialog=new ContentDialog{Title=title,Content=content,PrimaryButtonText=primary,CloseButtonText=L10n.Text("取消"),XamlRoot=DialogRoot};
+        try{return await dialog.ShowAsync();}
+        finally{dialog.Content=null;dialogDepth--;}
     }
     async Task SaveRecovery(JsonObject? result) {
         var generated=result?["recovery"]?.ToString();if(!string.IsNullOrEmpty(generated)&&pendingRecovery.Length==0)pendingRecovery=generated;var key=pendingRecovery;if(key.Length==0)return;lastCaptured=key;
@@ -120,11 +127,11 @@ public sealed partial class MainWindow : Window {
     }
     async Task ImportFile() {
         var picker=new FileOpenPicker();picker.FileTypeFilter.Add("*");InitializeWithWindow.Initialize(picker,WindowNative.GetWindowHandle(DialogOwner));var file=await picker.PickSingleFileAsync();
-        if(file!=null)await Action("importFile",new(){["path"]=file.Path});
+        if(file!=null)await ReviewImports(new[]{new ImportItem(file.Name,file.Path)});
     }
     async Task ImportFolder() {
         var picker=new FolderPicker();picker.FileTypeFilter.Add("*");InitializeWithWindow.Initialize(picker,WindowNative.GetWindowHandle(DialogOwner));var folder=await picker.PickSingleFolderAsync();
-        if(folder!=null)await Action("importFolder",new(){["path"]=folder.Path});
+        if(folder!=null)await ReviewImports(new[]{new ImportItem(folder.Name,folder.Path,true)});
     }
     void ClearPreviews() {
         foreach(var directory in previewDirectories.ToArray()) {
@@ -149,7 +156,14 @@ public sealed partial class MainWindow : Window {
     internal async Task ImportRecoveryFile(){var picker=new FileOpenPicker();picker.FileTypeFilter.Add(".json");InitializeWithWindow.Initialize(picker,WindowNative.GetWindowHandle(DialogOwner));var file=await picker.PickSingleFileAsync();if(file!=null){await core.Call("importRecovery",new(){["text"]=await Windows.Storage.FileIO.ReadTextAsync(file),["passphrase"]=DeviceSecret.GetOrCreate()});await Refresh();}}
     internal async Task ExportRecoveryFile()=>await SaveRecovery(await core.Call("exportRecovery",new(){["passphrase"]=DeviceSecret.GetOrCreate()}) as JsonObject);
     internal async Task ScanAuthorization(){var scanned=await AuthorizationScanner.ScanAsync(DialogRoot);if(scanned==null)return;if(scanned.StartsWith("cliper-pair-v1:")){await core.Call("approvePairingQR",new(){["text"]=scanned,["passphrase"]=DeviceSecret.GetOrCreate()});await Dialog(L10n.Text("授权成功"),Palette.Text(L10n.Text("新设备将自动连接并同步。")),L10n.Text("完成"));}else await AuthorizeCode(scanned);}
-    internal async Task AuthorizeCode(string text){var code=AuthorizationCode.Normalize(text)??throw new IOException(L10n.Text("请输入完整的 12 位授权码"));var request=await core.Call("inspectPairing",new(){["code"]=code}) as JsonObject??new();var fingerprint=Str(request,"fingerprint");if(await Dialog(L10n.Text("核对请求设备指纹"),Palette.Text(Str(request,"kind")+"\n"+fingerprint+L10n.Text("\n仅当请求设备显示相同指纹时授权。")),L10n.Text("指纹一致，授权"))==ContentDialogResult.Primary)await core.Call("approvePairing",new(){["code"]=code,["text"]=fingerprint,["passphrase"]=DeviceSecret.GetOrCreate()});}
+    internal async Task AuthorizeCode(string text){
+        var code=AuthorizationCode.Normalize(text)??throw new IOException(L10n.Text("请输入完整的 12 位授权码"));var request=await core.Call("inspectPairing",new(){["code"]=code}) as JsonObject??new();
+        var form=new StackPanel{Spacing=16};form.Children.Add(DeviceCard(RequestDevice(request),true));form.Children.Add(new TextBlock{Text=Str(request,"fingerprint"),FontSize=22,IsTextSelectionEnabled=true});
+        var confirmed=new CheckBox{Content=L10n.Text("我已在请求设备核对相同指纹")};form.Children.Add(confirmed);
+        var dialog=new ContentDialog{Title=L10n.Text("确认请求设备"),Content=form,PrimaryButtonText=L10n.Text("授权此设备"),CloseButtonText=L10n.Text("取消"),IsPrimaryButtonEnabled=false,XamlRoot=DialogRoot};confirmed.Checked+=(_,_)=>dialog.IsPrimaryButtonEnabled=true;confirmed.Unchecked+=(_,_)=>dialog.IsPrimaryButtonEnabled=false;
+        if(await dialog.ShowAsync()==ContentDialogResult.Primary&&confirmed.IsChecked==true)await core.Call("approvePairing",new(){["code"]=code,["text"]=Str(request,"fingerprint"),["passphrase"]=DeviceSecret.GetOrCreate()});
+    }
+
 
     internal Task ShowDevices()=>Devices();
     async Task Authorization() {
@@ -179,62 +193,59 @@ public sealed partial class MainWindow : Window {
             code.Text=scanned;
         }
         else if(choice!=ContentDialogResult.Primary)return;
-        var normalized=AuthorizationCode.Normalize(code.Text) ?? throw new IOException(L10n.Text("请输入完整的 12 位授权码"));
-        code.Text=normalized;
-        var request=await core.Call("inspectPairing",new(){["code"]=code.Text}) as JsonObject ?? new();var fingerprint=Str(request,"fingerprint");
-        var confirm=new StackPanel{Spacing=10};confirm.Children.Add(new TextBlock{Text=Str(request,"kind")+"\n"+fingerprint+L10n.Text("\n仅当请求设备显示相同指纹时授权。"),IsTextSelectionEnabled=true,TextWrapping=TextWrapping.Wrap});
-        if(await Dialog(L10n.Text("核对请求设备指纹"),confirm,L10n.Text("指纹一致，授权"))==ContentDialogResult.Primary)await core.Call("approvePairing",new(){["code"]=code.Text,["text"]=fingerprint,["passphrase"]=DeviceSecret.GetOrCreate()});
+        await AuthorizeCode(code.Text);
     }
+
     async Task WaitForAuthorization(StackPanel panel) {
         var notice=new TextBlock{TextWrapping=TextWrapping.Wrap};
         var image=AuthorizationScanner.CodeImage(Str(pairing!,"qrCode",$"cliper-pair-v1:{Str(pairing!,"code")}:{Str(pairing!,"fingerprint")}"));
         var label=new TextBlock{IsTextSelectionEnabled=true,TextWrapping=TextWrapping.Wrap,FontSize=22};
         var fingerprint=new TextBlock{IsTextSelectionEnabled=true,TextWrapping=TextWrapping.Wrap};
         panel.Children.Insert(0,new TextBlock{Text=L10n.Text("使用已授权设备扫描二维码，或在该设备输入下面的授权码。"),TextWrapping=TextWrapping.Wrap});
-        panel.Children.Insert(1,image);panel.Children.Insert(2,label);panel.Children.Insert(3,fingerprint);panel.Children.Insert(4,notice);
-        var dialog=new ContentDialog{Title=L10n.Text("等待设备授权"),Content=new ScrollViewer{Content=panel,MaxHeight=560},PrimaryButtonText=L10n.Text("检查授权结果"),SecondaryButtonText=L10n.Text("更换授权码"),CloseButtonText=L10n.Text("关闭"),XamlRoot=DialogRoot};
+        panel.Children.Insert(1,image);panel.Children.Insert(2,label);panel.Children.Insert(3,fingerprint);panel.Children.Insert(4,DeviceCard(RequestDevice(pairing!),true));panel.Children.Insert(5,notice);
+        var dialog=new ContentDialog{Title=L10n.Text("等待设备授权"),Content=new ScrollViewer{Content=panel,MaxHeight=560},SecondaryButtonText=L10n.Text("更换授权码"),CloseButtonText=L10n.Text("关闭"),XamlRoot=DialogRoot};
         using var stop=new CancellationTokenSource();bool checking=false;
-        var cancel=new Button{Content=L10n.Text("取消请求")};panel.Children.Add(cancel);
+        var cancel=new Button{Content=L10n.Text("退出账号")};panel.Children.Add(cancel);
         cancel.Click+=async(_,_)=>{
             if(checking)return;checking=true;
-            try{await core.Call("cancelPairing");pairing=null;dialog.Hide();}
+            try{await core.Call("forgetPendingSession");pairing=null;dialog.Hide();}
             catch(Exception e){notice.Text=L10n.Text(e.Message);}
             finally{checking=false;}
         };
         void UpdateCode() {
             var value=Str(pairing!,"code");image.Source=AuthorizationScanner.CodeImage(Str(pairing!,"qrCode",$"cliper-pair-v1:{value}:{Str(pairing!,"fingerprint")}")).Source;
-            label.Text=string.Join("-",Enumerable.Range(0,3).Select(i=>value.Substring(i*4,4)));
+            label.Text=value.Length==12?string.Join("-",Enumerable.Range(0,3).Select(i=>value.Substring(i*4,4))):value;
             fingerprint.Text=L10n.Text("请在两台设备上核对指纹。授权码会过期。")+"\n"+Str(pairing!,"fingerprint");
-            notice.Text=L10n.Text("授权码 5 分钟有效，批准后将自动连接。");
+            notice.Text=L10n.Text("正在自动检查授权结果");
         }
         async Task Check(bool renew=false) {
             if(checking||stop.IsCancellationRequested)return;
-            checking=true;dialog.IsPrimaryButtonEnabled=false;dialog.IsSecondaryButtonEnabled=false;
+            if(!renew&&long.TryParse(pairing?["expires"]?.ToString(),out var expires)&&expires<=DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()){notice.Text=L10n.Text("授权码已过期，请更换授权码");return;}
+            checking=true;dialog.IsSecondaryButtonEnabled=false;
             try {
                 var result=await core.Call(renew?"renewPairing":"completePairing",renew?null:new(){["passphrase"]=DeviceSecret.GetOrCreate()}) as JsonObject ?? new();
                 if(stop.IsCancellationRequested)return;
                 if(Str(result,"state") is "connected" or "syncRequired") {pairing=null;dialog.Hide();return;}
                 if(result["pairing"] is JsonObject next){pairing=next;UpdateCode();}
             } catch(Exception e){if(!stop.IsCancellationRequested)notice.Text=L10n.Text(e.Message);}
-            finally {checking=false;dialog.IsPrimaryButtonEnabled=true;dialog.IsSecondaryButtonEnabled=true;}
+            finally {checking=false;dialog.IsSecondaryButtonEnabled=true;}
         }
         async Task Monitor() {
             try {while(!stop.IsCancellationRequested){await Task.Delay(3000,stop.Token);await Check();}}
             catch(OperationCanceledException) { }
         }
-        dialog.PrimaryButtonClick+=async(_,args)=>{args.Cancel=true;await Check();};
         dialog.SecondaryButtonClick+=async(_,args)=>{args.Cancel=true;await Check(true);};
         Task monitor=Task.CompletedTask;
         dialog.Opened+=(_,_)=>monitor=Monitor();dialog.Closed+=(_,_)=>stop.Cancel();
         UpdateCode();
         try{await dialog.ShowAsync();}finally{stop.Cancel();await monitor;}
-        await Refresh();
+        await Refresh();if(!AccountReady&&status["pendingPairing"]==null){loginWindow?.Close();ShowLogin();}
     }
     async Task Devices() {
         var data=await core.Call("devices");var devices=data as JsonArray ?? (data as JsonObject)?["devices"] as JsonArray ?? new();
         var panel=new StackPanel{Spacing=8};var notice=new TextBlock{TextWrapping=TextWrapping.Wrap};panel.Children.Add(notice); var revokePass=new PasswordBox{PlaceholderText=L10n.Text("原资料库口令（旧版凭据缺失时）")}; if(DeviceSecret.Read()==null)panel.Children.Add(revokePass);
         foreach(var device in devices.OfType<JsonObject>()) {
-            panel.Children.Add(new TextBlock{Text=Str(device,"name",Str(device,"id"))});
+            panel.Children.Add(DeviceCard(device));
             bool confirming=false;var cancelRevoke=new Button{Content=L10n.Text("取消撤销"),Visibility=Visibility.Collapsed};var revoke=new Button{Content=L10n.Text("撤销设备"),IsEnabled=device["current"]?.GetValue<bool>()!=true&&device["revoked"]?.GetValue<bool>()!=true};revoke.Click+=async (_,_)=>{revoke.IsEnabled=false;try{ if(!confirming){confirming=true;revoke.Content=L10n.Text("确认撤销：已解密内容无法远程抹除");cancelRevoke.Visibility=Visibility.Visible;revoke.IsEnabled=true;return;} var value=DeviceSecret.Read() ?? revokePass.Password;if(string.IsNullOrEmpty(value))throw new IOException(L10n.Text("请输入原资料库口令"));await core.Call("revoke",new(){["deviceId"]=Str(device,"id"),["passphrase"]=value});revokePass.Password="";cancelRevoke.Visibility=Visibility.Collapsed;}catch(Exception e){notice.Text=L10n.Text(e.Message);revoke.IsEnabled=true;}};cancelRevoke.Click+=(_,_)=>{confirming=false;revoke.Content=L10n.Text("撤销设备");cancelRevoke.Visibility=Visibility.Collapsed;revokePass.Password="";};panel.Children.Add(revoke);panel.Children.Add(cancelRevoke);
         }
         await Dialog(L10n.Text("设备"),panel,L10n.Text("完成"));await Refresh();

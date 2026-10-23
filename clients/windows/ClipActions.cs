@@ -11,7 +11,14 @@ using WinUIEx;
 
 namespace ClipWeave;
 public sealed partial class MainWindow {
-    async Task AddText(){var input=new TextBox{AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,Height=220,MinWidth=420,PlaceholderText=L10n.Text("添加文字")};if(await Dialog(L10n.Text("添加文字"),input,L10n.Text("添加"))==ContentDialogResult.Primary&&!string.IsNullOrWhiteSpace(input.Text))await Action("addText",new(){["text"]=input.Text});}
+    async Task AddText(){
+        var input=new TextBox{AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,Height=220,MinWidth=420,PlaceholderText=L10n.Text("添加文字")};var form=new StackPanel{Spacing=16};form.Children.Add(input);var group=ImportGroups();form.Children.Add(group);
+        while(await Dialog(L10n.Text("添加文字"),form,L10n.Text("保存"))!=ContentDialogResult.Primary){if(input.Text.Length==0||await Dialog(L10n.Text("放弃尚未保存的文字？"),Palette.Text(L10n.Text("未保存内容不会加入资料库。")),L10n.Text("放弃草稿"))==ContentDialogResult.Primary)return;}
+        if(string.IsNullOrWhiteSpace(input.Text))return;if(System.Text.Encoding.UTF8.GetByteCount(input.Text)>32768)throw new IOException(L10n.Text("文本不能为空且不能超过 32 KiB"));
+        var created=await core.Call("addText",new(){["text"]=input.Text}) as JsonObject??new();var target=ChosenGroup(group);
+        while(target.Length>0){try{await core.Call("group",new(){["clipId"]=Str(created,"id"),["name"]=target});break;}catch(Exception failure){if(await Dialog(L10n.Text("操作未完成"),Palette.Text(L10n.Error(failure.Message)),L10n.Text("重试"))!=ContentDialogResult.Primary)break;}}
+        await Refresh();
+    }
     async Task<string> ExportTemporary(JsonObject clip) {
         var directory=Path.Combine(Path.GetTempPath(),"Clipper","Previews",Guid.NewGuid().ToString());Directory.CreateDirectory(directory);previewDirectories.Add(directory);
         var path=Path.Combine(directory,SafeName(clip));await core.Call("export",new(){["clipId"]=Str(clip,"id"),["path"]=path});return path;
@@ -38,8 +45,13 @@ public sealed partial class MainWindow {
         var content=await core.Call("preview",new(){["clipId"]=Str(clip,"id")}) as JsonObject??new();
         previewWindow?.Close();var window=new Window{Title=L10n.Text("内容预览")+" — Clipper"};previewWindow=window;
         var root=new Grid{Background=Palette.White};root.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});root.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
-        var bar=new Grid{Padding=new Thickness(20),ColumnSpacing=14};bar.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});bar.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});bar.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});
-        bar.Children.Add(Palette.Text(Str(clip,"title",Str(clip,"name",L10n.Text("内容预览"))),15,true));var copy=Button(L10n.Text("复制"),()=>CopyClip(clip));Grid.SetColumn(copy,1);bar.Children.Add(copy);var close=new Button{Content=L10n.Text("完成")};close.Click+=(_,_)=>window.Close();Grid.SetColumn(close,2);bar.Children.Add(close);root.Children.Add(bar);
+        var bar=new Grid{Padding=new Thickness(16),ColumnSpacing=14};bar.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});bar.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});
+        bar.Children.Add(Palette.Text(Str(clip,"title",Str(clip,"name",L10n.Text("内容预览"))),15,true));
+        var actions=new StackPanel{Orientation=Orientation.Horizontal,Spacing=8};Grid.SetColumn(actions,1);bar.Children.Add(actions);
+        var favorite=Palette.Icon(clip["favourite"]?.GetValue<bool>()==true?"\uE735":"\uE734","收藏",()=>{});favorite.Click+=async(_,_)=>await Run(async()=>{await Action("favourite",new(){["clipId"]=Str(clip,"id")});var updated=clips.FirstOrDefault(c=>Str(c,"id")==Str(clip,"id"));favorite.Content=new FontIcon{Glyph=updated?["favourite"]?.GetValue<bool>()==true?"\uE735":"\uE734",FontSize=16};});actions.Children.Add(favorite);
+        actions.Children.Add(Palette.Icon("\uE8C8","复制",()=>_=Run(()=>CopyClip(clip))));actions.Children.Add(Palette.Icon("\uE72D","分享",()=>_=Run(()=>ShareClip(clip))));
+        var more=Palette.Icon("\uE712","更多",()=>{});var moreMenu=new MenuFlyout();MenuItem(moreMenu,L10n.Text("所属分组")+" · "+Str(clip,"group",L10n.Text("未分组")),()=>_=Run(()=>MoveClip(clip)));MenuItem(moreMenu,"导出…",()=>_=Run(()=>ExportClip(clip)));MenuItem(moreMenu,"删除…",()=>_=Run(async()=>{await DeleteClip(clip);if(!clips.Any(c=>Str(c,"id")==Str(clip,"id")))window.Close();}));more.Flyout=moreMenu;actions.Children.Add(more);
+        actions.Children.Add(Palette.Icon("\uE711","关闭",window.Close));root.Children.Add(bar);
         if(ClipPresentation.Link(clip) is Uri uri) {
             var container=new Grid();container.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});container.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
             var open=new Button{Content=uri.Host+" · "+L10n.Text("在默认浏览器中打开"),Margin=new Thickness(20,0,20,12)};open.Click+=async(_,_)=>await Windows.System.Launcher.LaunchUriAsync(uri);container.Children.Add(open);
@@ -47,7 +59,7 @@ public sealed partial class MainWindow {
             browser.Loaded+=async(_,_)=>{try{await browser.EnsureCoreWebView2Async();browser.CoreWebView2.Settings.IsWebMessageEnabled=false;browser.CoreWebView2.NewWindowRequested+=async(_,e)=>{e.Handled=true;if(Uri.TryCreate(e.Uri,UriKind.Absolute,out var target)&&target.Scheme is "http" or "https")await Windows.System.Launcher.LaunchUriAsync(target);};browser.Source=uri;}catch{container.Children.Remove(browser);var fallback=Palette.Text(L10n.Text("网页预览暂不可用，请使用默认浏览器打开。"));fallback.Margin=new Thickness(20);Grid.SetRow(fallback,1);container.Children.Add(fallback);}};
             window.Closed+=(_,_)=>browser.Close();
         } else if(content["bytes"]!=null&&ClipPresentation.Kind(clip)=="image") {
-            var image=new Image{Source=await DecodeImage(Convert.FromBase64String(Str(content,"bytes"))),Stretch=Stretch.Uniform,Margin=new Thickness(20)};Grid.SetRow(image,1);root.Children.Add(image);
+            var image=new Image{Source=await DecodeImage(Convert.FromBase64String(Str(content,"bytes"))),Stretch=Stretch.Uniform,Margin=new Thickness(20)};var imagePanel=new Grid();imagePanel.Children.Add(image);var expand=Palette.Icon("\uE740","打开完整图片",()=>_=Run(()=>OpenFullImage(clip)));expand.HorizontalAlignment=HorizontalAlignment.Right;expand.VerticalAlignment=VerticalAlignment.Bottom;expand.Margin=new Thickness(24);imagePanel.Children.Add(expand);Grid.SetRow(imagePanel,1);root.Children.Add(imagePanel);
         } else if(content["text"]!=null) {
             var text=new TextBox{Text=Str(content,"text"),IsReadOnly=true,AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(20),BorderThickness=new Thickness(0),Background=Palette.White};if(ClipPresentation.Kind(clip)=="code")text.FontFamily=new FontFamily("Consolas");Grid.SetRow(text,1);root.Children.Add(text);
         } else {

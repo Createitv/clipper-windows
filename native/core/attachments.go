@@ -61,6 +61,9 @@ func (v *Vault) chunk(r io.Reader, key, clipID string) ([]Object, int64, error) 
 			return nil, 0, e
 		}
 		total += int64(n)
+		if limit := v.memberLimit("attachmentBytes"); limit > 0 && total > limit {
+			return nil, 0, errors.New("attachment_limit_reached")
+		}
 		if total > maxFileSize {
 			return nil, 0, errors.New("file exceeds 1 GiB")
 		}
@@ -142,6 +145,9 @@ func (v *Vault) fileClip(id, key, name string, size int64, parts []Object) Objec
 	return Object{"id": id, "type": fileType(name), "name": name, "title": name, "size": size, "fileKey": key, "parts": parts, "created": time.Now().UnixMilli(), "favourite": false, "group": "", "author": v.state.DeviceID}
 }
 func (v *Vault) addClip(c Object) error {
+	if err := v.checkClipLimits(c); err != nil {
+		return err
+	}
 	c["version"] = v.tick()
 	v.state.Clips[str(c["id"])] = c
 	return v.record(Operation{"upsert", c})
@@ -168,7 +174,11 @@ func (v *Vault) ImportFile(path string) (Object, error) {
 func (v *Vault) ImportBytes(data []byte, name string) (Object, error) {
 	var out Object
 	e := v.mutate(func() error {
-		if len(data) > 25*1024*1024 {
+		memoryLimit := int64(25 * 1024 * 1024)
+		if n := v.memberLimit("attachmentBytes"); n > 0 {
+			memoryLimit = n
+		}
+		if int64(len(data)) > memoryLimit {
 			return errors.New("memory import exceeds 25 MiB")
 		}
 		if name == "" {

@@ -10,6 +10,9 @@
     <Compile Include="../windows/BoundedLineReader.cs" Link="BoundedLineReader.cs" />
     <Compile Include="../windows/HistoryUpdates.cs" Link="HistoryUpdates.cs" />
     <Compile Include="../windows/SettingsValues.cs" Link="SettingsValues.cs" />
+    <Compile Include="../windows/DailyPresentation.cs" Link="DailyPresentation.cs" />
+    <Compile Include="../windows/PendingSessionStore.cs" Link="PendingSessionStore.cs" />
+    <Compile Include="../windows/ErrorMessages.cs" Link="ErrorMessages.cs" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
   </ItemGroup>
 </Project>

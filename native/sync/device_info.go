@@ -38,7 +38,7 @@ func normalizeDeviceInfo(d DeviceInfo) DeviceInfo {
 	d.Model = cleanDeviceText(d.Model)
 	d.OSVersion = cleanDeviceText(d.OSVersion)
 	switch d.Platform {
-	case "iphone", "ipad", "mac", "windows", "android", "linux", "web", "unknown":
+	case "iphone", "ipad", "mac", "windows", "android", "harmonyos", "linux", "web", "unknown":
 	default:
 		d.Platform = "unknown"
 	}

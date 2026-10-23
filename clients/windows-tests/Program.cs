@@ -76,6 +76,29 @@ using var unicodeBytes=new MemoryStream(System.Text.Encoding.UTF8.GetBytes(unico
 Equal(await new ClipWeave.BoundedLineReader(unicodeBytes).ReadAsync(30_000,CancellationToken.None),unicode);
 Console.WriteLine("Open pipe at 1024-byte reply boundary and split UTF-8 decoding passed");
 Console.WriteLine("Incremental refresh, legacy settings, buffered IPC and bottom-anchored height tests passed");
+// Daily parity regressions use isolated delegates; no real files/account or clipboard.
+var folderClip=new System.Text.Json.Nodes.JsonObject{["type"]="folder",["name"]="Design"};
+if(!ClipWeave.ClipPresentation.Matches(folderClip,"","","file"))throw new Exception("File filter must include folders and SVG attachments");
+var windowsInfo=new System.Text.Json.Nodes.JsonObject{["name"]="Office PC",["model"]="Surface",["platform"]="windows"};
+Equal(ClipWeave.DevicePresentation.Name(windowsInfo),"Office PC");if(!ClipWeave.DevicePresentation.Summary(windowsInfo).Contains("Windows"))throw new Exception("Missing concrete device platform");
+Equal(ClipWeave.WindowsLanguage.Resolve("en","zh-CN"),"en");Equal(ClipWeave.WindowsLanguage.Resolve("system","zh-TW"),"zh-Hans");
+var imported=new ClipWeave.ImportBatch(new[]{new ClipWeave.ImportItem("one","isolated-one"),new ClipWeave.ImportItem("two","isolated-two")},"Work");
+int creates=0,groupCalls=0;bool groupFails=true;
+async Task<System.Text.Json.Nodes.JsonNode?> FakeImport(string action,System.Text.Json.Nodes.JsonObject args){await Task.Yield();if(action=="group"){groupCalls++;if(groupFails&&args["clipId"]?.ToString()=="two")throw new IOException("offline");return null;}creates++;return new System.Text.Json.Nodes.JsonObject{["id"]=args["path"]!.ToString().Contains("one")?"one":"two"};}
+await imported.Save(FakeImport);if(!imported.Items[0].Complete||imported.Items[1].Complete)throw new Exception("Partial imports need per-file results");groupFails=false;await imported.Save(FakeImport);if(creates!=2||groupCalls!=3||imported.Items.Any(x=>!x.Complete))throw new Exception("Retry must not recreate imported files or repeat successful grouping");
+Console.WriteLine("Daily parity: file filter, device identity, language override, grouped imports and failed-only retry passed");
+CultureInfo.CurrentUICulture=CultureInfo.GetCultureInfo("en-US");
+if(!ClipperL10n.Error("sync server 409: device_limit_reached").Contains("Device limit"))throw new Exception("Wrapped service errors need readable English");
+CultureInfo.CurrentUICulture=CultureInfo.GetCultureInfo("zh-CN");
+if(!ClipperL10n.Error("upload: storage_quota").Contains("云空间"))throw new Exception("Wrapped storage errors need readable Chinese");
+Equal(ClipperL10n.Error("internal stack private/account/token"),"请求失败");
+var testRoot=Environment.GetEnvironmentVariable("CLIPWEAVE_BUILD_ROOT")??Environment.GetEnvironmentVariable("RUNNER_TEMP")??throw new Exception("Isolated external/hosted test root is required");
+var sessionDirectory=Path.Combine(testRoot,"windows-session-test-"+Guid.NewGuid());Directory.CreateDirectory(sessionDirectory);
+try{var saved=new ClipWeave.PendingSessionStore(sessionDirectory);var opaque=new string('A',5000);saved.Write(opaque);Equal(new ClipWeave.PendingSessionStore(sessionDirectory).Read(),opaque);try{saved.Write(new string('A',128*1024+1));throw new Exception("Accepted oversize checkpoint");}catch(IOException){}Equal(saved.Read(),opaque);saved.Write("");Equal(saved.Read(),"");}finally{Directory.Delete(sessionDirectory,true);}
+Console.WriteLine("Encrypted pending-session restart/size/clear and safe bilingual error tests passed");
+var recoveryDirectory=Path.Combine(testRoot,"windows-restoration-test-"+Guid.NewGuid());Directory.CreateDirectory(recoveryDirectory);
+try{var store=new ClipWeave.PendingSessionStore(recoveryDirectory);store.Write("old-encrypted-envelope");var recovery=new ClipWeave.SessionRestoration(store);int attempts=0;await recovery.Ensure(_=>{attempts++;throw new IOException("invalid key");});await recovery.Ensure(_=>{attempts++;return Task.CompletedTask;});if(!recovery.Failed||attempts!=1||store.Read()!=""||Directory.GetFiles(recoveryDirectory).Length!=1)throw new Exception("Bad pending sessions must be retained but must not block fresh authentication");}finally{Directory.Delete(recoveryDirectory,true);}
+Console.WriteLine("Corrupt-session quarantine retains encrypted data and does not repeatedly block reauthentication");
 sealed class CountingStream(string content):MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)){
     public int ReadCalls;
     public override ValueTask<int> ReadAsync(Memory<byte> buffer,CancellationToken token=default){ReadCalls++;return base.ReadAsync(buffer,token);}

@@ -90,6 +90,7 @@ sealed class WindowsShell : IDisposable {
         tray=new TaskbarIcon{Icon=icon,ToolTipText="Clipper",ContextFlyout=menu,LeftClickCommand=new ShellCommand(Toggle),Width=0,Height=0};
         window.Root.Children.Add(tray);tray.ForceCreate(false);
     }
+    public void RefreshLanguage(){SetTrayVisible(false);SetTrayVisible(window.Preferences.ShowTray);}
     public async Task PasteToPreviousAsync(bool paste) {
         HidePanel(true);
         if(!paste||!IsWindow(previous))return;

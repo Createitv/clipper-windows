@@ -21,4 +21,10 @@ static class DeviceSecret {
         catch {if(previous!=null)vault.Add(previous);throw;}
     }
     public static string GetOrCreate() {var value=Read();if(value!=null)return value;value=Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));Save(value);return value;}
+    public static string PendingKey() {
+        const string resource="dev.cliper.pending-session";var vault=new PasswordVault();
+        try{var credential=vault.Retrieve(resource,Scope);credential.RetrievePassword();if(Convert.FromBase64String(credential.Password).Length!=32)throw new IOException("Invalid session wrapping key");return credential.Password;}
+        catch(System.Runtime.InteropServices.COMException e) when(e.HResult==unchecked((int)0x80070490)){var key=Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));vault.Add(new PasswordCredential(resource,Scope,key));return key;}
+    }
+    public static void ResetPendingKey(){var vault=new PasswordVault();try{var credential=vault.Retrieve("dev.cliper.pending-session",Scope);vault.Remove(credential);}catch(System.Runtime.InteropServices.COMException e) when(e.HResult==unchecked((int)0x80070490)){}vault.Add(new PasswordCredential("dev.cliper.pending-session",Scope,Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))));}
 }

@@ -14,6 +14,10 @@
       "sha256": "16c0c0d7abaaee37397e28c37bc8bcb0473693101b3dfa6d359f1cdd43497443"
     },
     {
+      "path": "assets/brand/MembershipArtwork.png",
+      "sha256": "b9a48353126df7e339ce25e196e868a5b98dd1c186500c049001739ab8d0cc26"
+    },
+    {
       "path": "assets/brand/cliper-icon-1024.png",
       "sha256": "048b37796b741885406ef720a8b3636d29b243e5569039f270b4ec82f05136e7"
     },
@@ -26,20 +30,12 @@
       "sha256": "a049d0dabd70a8d41034299337a7ab00c7b05469cf1feb3f606e2f171a91078d"
     },
     {
-      "path": "clients/windows-tests/LocalizationTests.csproj",
-      "sha256": "972470530d5d2172b0498a634508d73507b3d6c594616fecfc9b7a7ac85eeb93"
-    },
-    {
-      "path": "clients/windows-tests/Program.cs",
-      "sha256": "5da326aa3a23d27ae1daed0ec871d669528d91a6e4cc5745be210c40353373b3"
-    },
-    {
       "path": "clients/windows/App.xaml",
       "sha256": "1f5bdb7e1b228505978f738b83df8fdd83031c2311178943d1f96d73a05e1fb6"
     },
     {
       "path": "clients/windows/App.xaml.cs",
-      "sha256": "c384a1bb43f3f08bc0bd134c3e60719e2a2593620be303eda7b248f61cc0fa1c"
+      "sha256": "250585f3beab9bcf3d8750fe51068115a15a6e38e2c3e347db33a5e3b49f9b38"
     },
     {
       "path": "clients/windows/AuthorizationCode.cs",
@@ -55,27 +51,43 @@
     },
     {
       "path": "clients/windows/ClipActions.cs",
-      "sha256": "caf1ce5065813c2118e90f5dc7db99daff5c6e6c64134e9c7db3d14919faaaa5"
+      "sha256": "eabf2543f64d2201e11f0b321f1e7d5e82688d5e0a2f66d0cea82ef2508ae72c"
     },
     {
       "path": "clients/windows/ClipPresentation.cs",
-      "sha256": "9d8afa3e8a4c8e5e66a40094d5c358ba58dfd201a93899b7e9510f1c12e7e106"
+      "sha256": "010145b90f68c40178676dea6ab43a4ca330fcf9db0b4243096501d686510c8a"
     },
     {
       "path": "clients/windows/ClipWeave.csproj",
-      "sha256": "872d4803be11b2633a9602c475acad819e6bd595cb143257994ea168b46244c8"
+      "sha256": "82e830648c7bbb7dd08966942b9ca2fe72e79e1a2ac97edb834d63c71b10e55b"
     },
     {
       "path": "clients/windows/ClipboardAdapter.cs",
       "sha256": "2c94a42844f3653629290dd29698fcea8c888004932d29b16ff9db9c46864e52"
     },
     {
+      "path": "clients/windows/DailyFlows.cs",
+      "sha256": "bf3aa4377f99fa1e4d2de901e3913c85b908c8df396d1f56197dd7c7beb1f551"
+    },
+    {
+      "path": "clients/windows/DailyPresentation.cs",
+      "sha256": "e90cb49d6bee7ee3c7931dcb56d79b92badcad5853771e6e5c08f798a618e8c3"
+    },
+    {
       "path": "clients/windows/DeviceSecret.cs",
-      "sha256": "cc9684383210401b38e0442a259fe9a1d188272ee8ffbc6c50c65b20367667c2"
+      "sha256": "0a76df18b6ca1c76795409dc7e9dbe8b7c50d5244b9c371255090b93e1345482"
+    },
+    {
+      "path": "clients/windows/ErrorMessages.cs",
+      "sha256": "26df9923efad29e92fbcff0b076f61fedcbfe9571c7118f387206ec91772d2be"
+    },
+    {
+      "path": "clients/windows/Feedback.cs",
+      "sha256": "c928a0cb3a641db9f6c27443c4df7756f4ae8d0ea0b86298994df75fb97173ca"
     },
     {
       "path": "clients/windows/GoClient.cs",
-      "sha256": "096e41520954d35fd438cf9397ae9bee13c4999d8214c316d01fc780677db0a8"
+      "sha256": "1d0c3ca30a94f80f2b5fc56d53b8136daecc359a7e500948a6d9259686f5d4fd"
     },
     {
       "path": "clients/windows/HistoryUpdates.cs",
@@ -83,19 +95,23 @@
     },
     {
       "path": "clients/windows/Localization.cs",
-      "sha256": "c11d5ae78d3ffce4d10106ef1d4059d0435b91b3bc2e3bdfff6e741b373e2f9d"
+      "sha256": "d2b668c694d7d1d9b129496d2b0fe95fe2675881344cff631cc3d2eaf336c7ba"
     },
     {
       "path": "clients/windows/LoginWindow.cs",
-      "sha256": "0e839e2d6fb3e51677b7e3bafdbe4f8c98157ce679112ec0b33d1e1af1c3dbfa"
+      "sha256": "d71eb33bf1e5466b30cc38dbe78c450fe3aa89049640ddab5821d0358b8b91c0"
     },
     {
       "path": "clients/windows/MainPanel.cs",
-      "sha256": "ad011f0172b73529957c5a61717aa1cfa35892976fd24a87936b751dc852f9a1"
+      "sha256": "f2ad212e117aec0c6cf7680a65291ab854dc152fe168c78d246b4e2fa4fa9409"
     },
     {
       "path": "clients/windows/MainWindow.cs",
-      "sha256": "1bf3cb2645a1887c3023462b7739cc0047132aebd05e582ceb13da467c1ddc75"
+      "sha256": "16cee481fe7911c8355454472c95e168c9b45ff3d4a0e7b6b07e5a8367ea96bb"
+    },
+    {
+      "path": "clients/windows/PendingSessionStore.cs",
+      "sha256": "f8fdb5b8b9524e9aa636e19f59a5ec1c8447c0fc2365f28b510a2c66f24307e4"
     },
     {
       "path": "clients/windows/SettingsValues.cs",
@@ -103,7 +119,7 @@
     },
     {
       "path": "clients/windows/SettingsWindow.cs",
-      "sha256": "b5dfe99d102d66ba9556d155f0d69d25f5e6bdad1a61691d0e5cb2db1c6dc26e"
+      "sha256": "467a5ec451e40c3e503b2f4f132fb99f411fcf96b09158265fa58419c9e187b9"
     },
     {
       "path": "clients/windows/UiDiagnostics.cs",
@@ -115,11 +131,11 @@
     },
     {
       "path": "clients/windows/WindowsPreferences.cs",
-      "sha256": "d2eb2feec250752753a8df602e5a0a518edc6aaa604a8ed2867aedbbe5b3f54c"
+      "sha256": "c7cada2426dc76d603ff0f71b27653a2bd2670f4b795d6b37ac5117873842523"
     },
     {
       "path": "clients/windows/WindowsShell.cs",
-      "sha256": "b580857336910c71a9d649974df1f54a8056707d8711ae5d3c7c8e0221c64e9f"
+      "sha256": "bfee1a1c2fa265a699d17902970cbc6f6f75f20f33698e4a78223835d651ae20"
     },
     {
       "path": "clients/windows/app.manifest",
@@ -138,8 +154,16 @@
       "sha256": "8c3a81e95486853b618e63a5bfb7ad0f45c0de2eecde7170e1dcfd10dae9aff1"
     },
     {
+      "path": "clients/windows-tests/LocalizationTests.csproj",
+      "sha256": "b83ce6a6ccd03b893c59ad07c1b500aebbdbf0b774a0aab484df9e91649acbc1"
+    },
+    {
+      "path": "clients/windows-tests/Program.cs",
+      "sha256": "ca8ebf0cd61e5b6765110adff064a973cdfb87fa97fbc0a74403a4930f7002ea"
+    },
+    {
       "path": "native/bridge/client.go",
-      "sha256": "47ffe1854421467b5832a7138bad6f6d755b1931b86a9c8533f8209bf24f21e8"
+      "sha256": "fa938486328b4ba61cff83dd73062e261530e8f6d2e538690af12aabd2ab7c64"
     },
     {
       "path": "native/bridge/lock_windows.go",
@@ -155,7 +179,7 @@
     },
     {
       "path": "native/core/attachments.go",
-      "sha256": "6e621c8cf4c6c83dbbb959849836753d73d383b43407f6df1af46710b62198b4"
+      "sha256": "5e3e7cfcaed9cc8d79f229d55d6ac07b4a1f2069dba6209155e1c1fb62fbfccd"
     },
     {
       "path": "native/core/crypto.go",
@@ -170,8 +194,12 @@
       "sha256": "10e6810403c905c320fe1a0cc5440355676a9442a4185118c2355f458f98e9d6"
     },
     {
+      "path": "native/core/membership.go",
+      "sha256": "8c808dd4cdc5a7785befceb0037860112c5db31767c84ab3e1e88a6b9ea30574"
+    },
+    {
       "path": "native/core/operations.go",
-      "sha256": "f2218086de6d6ecc397a3b07e6f9bbcf84a563166a69a62b05ea619b30370233"
+      "sha256": "0f6e143731feb4763dc1d7ed4b57e4bad67e1c44e0f732e8ff383f59bc2d6231"
     },
     {
       "path": "native/core/profiles.go",
@@ -207,11 +235,11 @@
     },
     {
       "path": "native/sync/device_info.go",
-      "sha256": "c1d568705b3c91e1dedff523fe4e9b5d1aee2616396e2216a3144a85b52516d2"
+      "sha256": "74bc841ffe449250226c0517993c3d1f0f09be027a8bfb81ca7ac04de935e9b7"
     },
     {
       "path": "native/sync/engine.go",
-      "sha256": "7092223fb4b7aaf2b8ec8e39ca8bf474c3fe7cf3e6cd549dbefc020db3521ac1"
+      "sha256": "f126d1a20b2b665365797c2d272a8b80874afcb7997350086722ce7b6476f01f"
     },
     {
       "path": "native/sync/pairing.go",

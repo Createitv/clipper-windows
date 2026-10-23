@@ -347,6 +347,16 @@ func (e *Engine) sync(ctx context.Context) (result error) {
 		_ = e.vault.UpdateConfig(core.Object{"cloudSyncedAt": nil})
 		return errors.New("云端资料库身份发生变化，请重新登录并授权")
 	}
+	var access core.Object
+	if err = a.call(ctx, "GET", "/billing/entitlement", token, nil, &access); err != nil {
+		return err
+	}
+	if access["unavailable"] == true {
+		return errors.New("membership_unavailable")
+	}
+	if err = e.vault.UpdateConfig(core.Object{"membership": access}); err != nil {
+		return err
+	}
 	trusted, err := e.trusted(ctx, a, token, account)
 	if err != nil {
 		return err
@@ -602,6 +612,11 @@ func (e *Engine) Membership(ctx context.Context, force bool) (core.Object, error
 	}
 	if err != nil {
 		return nil, err
+	}
+	if access["unavailable"] != true {
+		if err = e.vault.UpdateConfig(core.Object{"membership": access}); err != nil {
+			return nil, err
+		}
 	}
 	return core.Object{"accountId": account, "entitlement": access}, nil
 }

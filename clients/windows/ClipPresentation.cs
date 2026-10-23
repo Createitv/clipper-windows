@@ -13,7 +13,7 @@ public static class ClipPresentation {
     public static bool Matches(JsonObject clip,string query,string group,string kind) {
         if(group=="★"&&clip["favourite"]?.GetValue<bool>()!=true)return false;
         if(group!=""&&group!="★"&&Text(clip,"group")!=group)return false;
-        if(kind!=""&&Kind(clip)!=kind)return false;
+        if(kind!=""&&Kind(clip)!=kind&&!(kind=="file"&&Kind(clip) is "folder" or "svg"))return false;
         return string.IsNullOrWhiteSpace(query)||string.Join(" ",new[]{Text(clip,"title"),Text(clip,"text"),Text(clip,"name"),Text(clip,"group")}).Contains(query,StringComparison.OrdinalIgnoreCase);
     }
     public static PanelRectangle PanelBounds(int left,int top,int width,int height,double scale,double requestedHeight=430) {
@@ -26,7 +26,7 @@ public static class ClipPresentation {
     public static bool IsSensitiveFormat(string value)=>new[]{"ExcludeClipboardContentFromMonitorProcessing","Clipboard Viewer Ignore","com.agilebits.onepassword","org.nspasteboard.ConcealedType","org.clipweave.own-write"}.Contains(value,StringComparer.OrdinalIgnoreCase);
     public static string Size(JsonObject clip) {
         if(!long.TryParse(Text(clip,"size"),out var size)||size<=0)return L10n.Text("端到端加密");
-        return size>=1024*1024?$"{size/(1024.0*1024):0.#} MB":size>=1024?$"{size/1024.0:0.#} KB":$"{size} B";
+        return size>=1024L*1024*1024?$"{size/(1024.0*1024*1024):0.#} GB":size>=1024*1024?$"{size/(1024.0*1024):0.#} MB":size>=1024?$"{size/1024.0:0.#} KB":$"{size} B";
     }
     public static string Time(JsonObject clip) {
         if(!long.TryParse(Text(clip,"created"),out var stamp))return "";

@@ -150,7 +150,7 @@ func (v *Vault) List(query, kind, group string, favourites bool) ([]Object, erro
 	out := []Object{}
 	q := strings.ToLower(query)
 	for _, c := range v.state.Clips {
-		if c["deleted"] == true || favourites && c["favourite"] != true || kind != "" && str(c["type"]) != kind || group != "" && str(c["group"]) != group {
+		if !v.historyVisible(c) || c["deleted"] == true || favourites && c["favourite"] != true || kind != "" && str(c["type"]) != kind || group != "" && str(c["group"]) != group {
 			continue
 		}
 		search := fmt.Sprint(c["text"], " ", c["title"], " ", c["name"], " ", c["group"])
@@ -192,9 +192,18 @@ func (v *Vault) edit(id string, fn func(Object)) error {
 		if e != nil {
 			return e
 		}
+		c, e = clone(c)
+		if e != nil {
+			return e
+		}
 		fn(c)
+		if err := v.checkClipLimits(c); err != nil {
+			return err
+		}
+		v.addGroup(str(c["group"]))
 		c["version"] = v.tick()
 		c["author"] = v.state.DeviceID
+		v.state.Clips[id] = c
 		return v.record(Operation{"upsert", c})
 	})
 }
@@ -221,7 +230,7 @@ func (v *Vault) SetGroup(id, name string) error {
 	if name != "" && (strings.TrimSpace(name) == "" || utf8.RuneCountInString(name) > 80) {
 		return errors.New("group must contain 1 to 80 characters")
 	}
-	return v.edit(id, func(c Object) { c["group"] = name; v.addGroup(name) })
+	return v.edit(id, func(c Object) { c["group"] = name })
 }
 func (v *Vault) delete(id string) error {
 	kept := []Packet{}
@@ -280,6 +289,9 @@ func (v *Vault) DeleteExpired() (int, error) {
 
 func (v *Vault) AddGroup(name string) error {
 	return v.mutate(func() error {
+		if err := v.checkGroupLimit(name); err != nil {
+			return err
+		}
 		if strings.TrimSpace(name) == "" || utf8.RuneCountInString(name) > 80 {
 			return errors.New("group must contain 1 to 80 characters")
 		}
