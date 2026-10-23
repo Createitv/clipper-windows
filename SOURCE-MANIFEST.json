@@ -71,7 +71,7 @@
     },
     {
       "path": "clients/windows/LoginWindow.cs",
-      "sha256": "37738949de45c3ea7231ec5ecae83db76b3cb3f0096ed8ca8f6a37160e9280c1"
+      "sha256": "0b41fe4a4034c158f20074e95ef62fba9b316e1d02ff69e1c369acd64e8be8f3"
     },
     {
       "path": "clients/windows/MainPanel.cs",
@@ -79,7 +79,7 @@
     },
     {
       "path": "clients/windows/MainWindow.cs",
-      "sha256": "70331a9531df6248507b97cb3d29a1390a60304d05cd13b1a2a5dbcea7e8b69f"
+      "sha256": "48e532c28268a9bc4467f7e19b105290c3f24e3d68be4c9a3bb0b1846d15972d"
     },
     {
       "path": "clients/windows/SettingsWindow.cs",

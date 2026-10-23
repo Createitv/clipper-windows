@@ -100,6 +100,7 @@ public sealed partial class MainWindow : Window {
         if(body.Children.Count==0||wasUnlocked!=AccountReady||renderedGroups!=(status["groups"]?.ToJsonString()??"")) Render();
         else { UpdateSyncIndicator(); if(AppWindow.IsVisible)RenderHistory(); }
         if(wasUnlocked&&!AccountReady){settingsWindow?.Close();ShowLogin();}
+        if(!wasUnlocked&&AccountReady){loginWindow?.Close();Shell.ShowPanel();}
         StateChanged?.Invoke();
     }
     internal async Task<ContentDialogResult> Dialog(string title,UIElement content,string primary) {
@@ -131,7 +132,9 @@ public sealed partial class MainWindow : Window {
     Task Settings(){OpenSettings();return Task.CompletedTask;}
     Task Connect(){ShowLogin();return Task.CompletedTask;}
     internal async Task<JsonObject> SignIn(string email,string password,string code,bool passwordMode) {
-        var result=await core.Call(passwordMode?"passwordConnect":"autoConnect",new(){["endpoint"]="https://api.cliper.dev",["email"]=email,["password"]=password,["code"]=code,["passphrase"]=DeviceSecret.GetOrCreate()}) as JsonObject??new();
+        JsonObject result;
+        try{result=await core.Call(passwordMode?"passwordConnect":"autoConnect",new(){["endpoint"]="https://api.cliper.dev",["email"]=email,["password"]=password,["code"]=code,["passphrase"]=DeviceSecret.GetOrCreate()}) as JsonObject??new();}
+        catch(BridgeException failure) when(failure.Payload!=null){await SaveRecovery(failure.Payload);throw;}
         if(result["passwordSetupRequired"]?.GetValue<bool>()==true)return result;
         pairing=result["pairing"] as JsonObject;await SaveRecovery(result);await Refresh();
         if(pairing!=null)await Authorization();
