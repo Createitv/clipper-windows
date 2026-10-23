@@ -301,6 +301,8 @@ func (c *Client) dispatch(ctx context.Context, r request) (any, error) {
 		return c.engine.InspectPairing(ctx, r.Code)
 	case "approvePairing":
 		return c.engine.ApprovePairing(ctx, r.Code, r.Passphrase, r.Text)
+	case "approvePairingQR":
+		return c.engine.ApprovePairingQR(ctx, r.Text, r.Passphrase)
 	case "pairingGrants":
 		return c.engine.PairingGrants(ctx)
 	case "cancelGrant":

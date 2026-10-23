@@ -3,7 +3,7 @@
   "files": [
     {
       "path": ".github/workflows/windows-package.yml",
-      "sha256": "90c72fa523a2b94a6e5aaedb43139342663049185ff42449fe98a01f58fdba2f"
+      "sha256": "d499feb64e30740a2f83b82b39d3dbdc1fc501f6c140be577d5187d381e645f4"
     },
     {
       "path": ".github/workflows/windows-release.yml",
@@ -26,8 +26,16 @@
       "sha256": "189d8acbc9c38b5f3ddf16627ec72896770dfdafb695ba9c18437b854ae541b4"
     },
     {
+      "path": "clients/windows/AuthorizationCode.cs",
+      "sha256": "dcec3dc721230c1bd2d5d7bac765f91d5935c03b422bfad2c2691d107750a7ef"
+    },
+    {
+      "path": "clients/windows/AuthorizationScanner.cs",
+      "sha256": "15229349177bf52dc08f32dc37a26eb11ea35ef63e36ba0001df71368308a780"
+    },
+    {
       "path": "clients/windows/ClipWeave.csproj",
-      "sha256": "3e76130a425081b231635ee7dcb7f5ddce5c93d488bdafef63ef11821006e466"
+      "sha256": "407c8674ac37502856c363083f4135a5a939aafc1b804b96f217d0f1f54d26e8"
     },
     {
       "path": "clients/windows/DeviceSecret.cs",
@@ -39,11 +47,11 @@
     },
     {
       "path": "clients/windows/Localization.cs",
-      "sha256": "86df2d77fe67dfe97d4cc272b2725b32e1e03553a851e4836ea8d582fadcd093"
+      "sha256": "c3b6a132ca204c15bc609df8921b1dead8f2440eed7d9ba91d96a15427841dfc"
     },
     {
       "path": "clients/windows/MainWindow.cs",
-      "sha256": "26949045533e6018f463856376a081846cff3dc86639dad1eb02adeefe49c22d"
+      "sha256": "4f899fd7ec0532dcaed5602f8c7ed2b8906e8ab1dcb17e7f9e3dbc87a3ceecbe"
     },
     {
       "path": "clients/windows/app.manifest",
@@ -55,11 +63,19 @@
     },
     {
       "path": "clients/windows/ci-build.ps1",
-      "sha256": "4a4f57bdaf153078dec22d2fd414d31f5b1493debba3af995c078d334cf6a5d2"
+      "sha256": "f9d6160930cc788e0c17e3f72fadaddfa7fa58089426d714a83d9774392623db"
+    },
+    {
+      "path": "clients/windows-tests/LocalizationTests.csproj",
+      "sha256": "cd6d636cb855ff45b59d34e7c002070c9eda548e67c48f4da04dacbbb4347b57"
+    },
+    {
+      "path": "clients/windows-tests/Program.cs",
+      "sha256": "0f7db86b5e468930e4d7cc080530e7e65bb4b191300dc6858a86d773df462cc4"
     },
     {
       "path": "native/bridge/client.go",
-      "sha256": "e6ba3caa9d67ce3b6eeea8ea36407c32bc1e9c5168fd1eb1df6af92bc5e965bb"
+      "sha256": "47ffe1854421467b5832a7138bad6f6d755b1931b86a9c8533f8209bf24f21e8"
     },
     {
       "path": "native/bridge/lock_windows.go",
@@ -135,11 +151,15 @@
     },
     {
       "path": "native/sync/pairing.go",
-      "sha256": "83a7b947fba3bccca3ec4845252f7a9a09355b8ae98a6e33f5ea291d3b706c6d"
+      "sha256": "8c3641cee5c4daf57e24c4ac5c7411e620123705d811310f1b8bc3935ea9bec5"
+    },
+    {
+      "path": "native/sync/pairing_code.go",
+      "sha256": "38d65edb73b9ef459c3d93e3475b50878e5905b5f0555012e05546c84018629f"
     },
     {
       "path": "native/sync/pending_session.go",
-      "sha256": "3a5faccd7a73a3ec1ffe0b063cf8cf56100a85d33ffa7c59af10c761e5770645"
+      "sha256": "46beceb9e04c1f3cf334bc946b02fc90c034fb8c0768c362a68e69cdcd5d31e4"
     },
     {
       "path": "native/sync/session.go",

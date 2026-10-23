@@ -123,7 +123,14 @@ public sealed class MainWindow : Window {
             controls.Children.Add(Button(favourite?L10n.Text("取消收藏"):L10n.Text("收藏"),async ()=>{var args=Args();args["value"]=!favourite;await Action("favourite",args);}));
             controls.Children.Add(Button(L10n.Text("分组"),async ()=>{
                 var input=new TextBox{Text=Str(clip,"group"),PlaceholderText=L10n.Text("分组名称（留空移除）")};
-                if(await Dialog(L10n.Text("分组"),input,L10n.Text("保存"))==ContentDialogResult.Primary) {var args=Args();args["name"]=input.Text;await Action("group",args);}
+                var choices=new ComboBox{Header=L10n.Text("选择分组"),HorizontalAlignment=HorizontalAlignment.Stretch};
+                choices.Items.Add(L10n.Text("未分组"));
+                var names=(status["groups"] as JsonArray)?.Select(x=>x?.ToString()??"").ToList() ?? new List<string>();
+                foreach(var name in names)choices.Items.Add(name);
+                choices.SelectedIndex=names.IndexOf(input.Text)+1;
+                choices.SelectionChanged+=(_,_)=>{if(choices.SelectedIndex>=0)input.Text=choices.SelectedIndex==0?"":names[choices.SelectedIndex-1];};
+                var form=new StackPanel{Spacing=12};form.Children.Add(choices);form.Children.Add(input);
+                if(await Dialog(L10n.Text("分组"),form,L10n.Text("保存"))==ContentDialogResult.Primary) {var args=Args();args["name"]=input.Text;await Action("group",args);}
             }));
             controls.Children.Add(Button(L10n.Text("删除"),async ()=>{if(await Dialog(L10n.Text("删除此内容？"),new TextBlock{Text=L10n.Text("删除会同步至其他设备。")},L10n.Text("删除"))==ContentDialogResult.Primary)await Action("delete",Args());}));
             history.Items.Add(card);
@@ -208,42 +215,88 @@ public sealed class MainWindow : Window {
         password.Password="";confirmPassword.Password="";pairing=result?["pairing"] as JsonObject;secret.Password="";await SaveRecovery(result);await Refresh();if(pairing!=null)await Authorization();
     }
     async Task Authorization() {
+        pairing=status["pendingPairing"] as JsonObject ?? pairing;
         var panel=new StackPanel{Spacing=10};
-        var code=new TextBox{PlaceholderText=L10n.Text("设备 / 浏览器授权码")};panel.Children.Add(code);
+        var code=new TextBox{Header=L10n.Text("12 位授权码"),PlaceholderText="ABCD-2345-WXYZ"};
         var import=new Button{Content=L10n.Text("导入恢复文件…")};import.Click+=async(_,_)=>{try {var picker=new FileOpenPicker();picker.FileTypeFilter.Add(".json");InitializeWithWindow.Initialize(picker,WindowNative.GetWindowHandle(this));var file=await picker.PickSingleFileAsync();if(file!=null){var text=await Windows.Storage.FileIO.ReadTextAsync(file);await core.Call("importRecovery",new(){["text"]=text,["passphrase"]=DeviceSecret.GetOrCreate()});await Refresh();}}catch(Exception e){error.Text=L10n.Text(e.Message);}};panel.Children.Add(import);
         var export=new Button{Content=L10n.Text("导出恢复文件…")};export.Click+=async(_,_)=>{try{await SaveRecovery(await core.Call("exportRecovery",new(){["passphrase"]=DeviceSecret.GetOrCreate()}) as JsonObject);}catch(Exception e){error.Text=L10n.Text(e.Message);}};panel.Children.Add(export);
         if(pairing!=null) {
-            panel.Children.Add(DeviceIdentityCard(pairing));
-            panel.Children.Add(new TextBlock{Text=L10n.Text("在已授权设备输入：")+Str(pairing,"code")+"\n"+Str(pairing,"fingerprint"),IsTextSelectionEnabled=true,TextWrapping=TextWrapping.Wrap});
-            var cancel=new Button{Content=L10n.Text("取消请求")};cancel.Click+=async(_,_)=>{try{await core.Call("cancelPairing");pairing=null;}catch(Exception e){error.Text=L10n.Text(e.Message);}};panel.Children.Add(cancel);
-            if(await Dialog(L10n.Text("等待设备授权"),panel,L10n.Text("检查授权结果"))==ContentDialogResult.Primary) {var result=await core.Call("completePairing",new(){["passphrase"]=DeviceSecret.GetOrCreate()}) as JsonObject;if((Str(result??new(),"state")=="connected" || Str(result??new(),"state")=="syncRequired"))pairing=null;await Refresh();}
+            await WaitForAuthorization(panel);
             return;
         }
+        panel.Children.Insert(0,new TextBlock{Text=L10n.Text("扫描新设备的二维码，或输入 12 位授权码。"),TextWrapping=TextWrapping.Wrap});
+        panel.Children.Insert(1,code);
+        bool scanning=false;
+        var scan=new Button{Content=L10n.Text("扫描授权二维码")};panel.Children.Insert(2,scan);
+        var authorization=new ContentDialog{Title=L10n.Text("授权与恢复"),Content=panel,PrimaryButtonText=L10n.Text("检查请求"),CloseButtonText=L10n.Text("取消"),XamlRoot=body.XamlRoot};
+        scan.Click+=(_,_)=>{scanning=true;authorization.Hide();};
         if(status["unlocked"]?.GetValue<bool>()==true) {
             var data=await core.Call("pairingGrants");var grants=data as JsonArray ?? (data as JsonObject)?["requests"] as JsonArray ?? new();
             foreach(var grant in grants.OfType<JsonObject>()) {var id=Str(grant,"id");var cancel=new Button{Content=L10n.Text("取消浏览器授权 ")+id};cancel.Click+=async(_,_)=>{try{await core.Call("cancelGrant",new(){["deviceId"]=id});cancel.IsEnabled=false;}catch(Exception e){error.Text=L10n.Text(e.Message);}};panel.Children.Add(cancel);}
         }
-        if(await Dialog(L10n.Text("授权与恢复"),panel,L10n.Text("检查请求"))!=ContentDialogResult.Primary||string.IsNullOrWhiteSpace(code.Text))return;
+        var choice=await authorization.ShowAsync();
+        if(scanning) {
+            var scanned=await AuthorizationScanner.ScanAsync(body.XamlRoot);if(scanned==null)return;
+            if(scanned.StartsWith("cliper-pair-v1:")) {await core.Call("approvePairingQR",new(){["text"]=scanned,["passphrase"]=DeviceSecret.GetOrCreate()});await Dialog(L10n.Text("授权成功"),new TextBlock{Text=L10n.Text("新设备将自动连接并同步。")},L10n.Text("完成"));return;}
+            code.Text=scanned;
+        }
+        else if(choice!=ContentDialogResult.Primary)return;
+        var normalized=AuthorizationCode.Normalize(code.Text) ?? throw new IOException(L10n.Text("请输入完整的 12 位授权码"));
+        code.Text=normalized;
         var request=await core.Call("inspectPairing",new(){["code"]=code.Text}) as JsonObject ?? new();var fingerprint=Str(request,"fingerprint");
-        var confirm=new StackPanel{Spacing=10};confirm.Children.Add(DeviceIdentityCard(request));confirm.Children.Add(new TextBlock{Text=Str(request,"kind")+"\n"+fingerprint+L10n.Text("\n仅当请求设备显示相同指纹时授权。"),IsTextSelectionEnabled=true,TextWrapping=TextWrapping.Wrap});
+        var confirm=new StackPanel{Spacing=10};confirm.Children.Add(new TextBlock{Text=Str(request,"kind")+"\n"+fingerprint+L10n.Text("\n仅当请求设备显示相同指纹时授权。"),IsTextSelectionEnabled=true,TextWrapping=TextWrapping.Wrap});
         if(await Dialog(L10n.Text("核对请求设备指纹"),confirm,L10n.Text("指纹一致，授权"))==ContentDialogResult.Primary)await core.Call("approvePairing",new(){["code"]=code.Text,["text"]=fingerprint,["passphrase"]=DeviceSecret.GetOrCreate()});
     }
-    static FrameworkElement DeviceIdentityCard(JsonObject value,bool authorized=false) {
-        var info=value["deviceInfo"] as JsonObject??value;var platform=Str(info,"platform");
-        var symbol=platform switch {"iphone"=>"\uE8EA","ipad"=>"\uE70A","mac"=>"\uE770","windows"=>"\uE782","android"=>"\uE8EA","web"=>"\uE774",_=>"\uE7F8"};
-        var label=platform switch {"iphone"=>"iPhone","ipad"=>"iPad","mac"=>"Mac","windows"=>"Windows","android"=>"Android","web"=>L10n.Text("浏览器"),_=>L10n.Text("设备")};
-        var row=new StackPanel{Orientation=Orientation.Horizontal,Spacing=12};row.Children.Add(new FontIcon{Glyph=symbol,FontSize=26});
-        var text=new StackPanel{Spacing=4};text.Children.Add(new TextBlock{Text=Str(info,"name",L10n.Text("设备")),TextWrapping=TextWrapping.Wrap});
-        text.Children.Add(new TextBlock{Text=string.Join(" · ",new[]{label,Str(info,"model"),Str(info,"osVersion")}.Where(x=>!string.IsNullOrEmpty(x))),TextWrapping=TextWrapping.Wrap,Opacity=.7});
-        var raw=value["approvedAt"]??value["created"];
-        if(long.TryParse(raw?.ToString(),out var ms)&&ms>0) text.Children.Add(new TextBlock{Text=L10n.Text(authorized?"授权时间":"请求时间")+" · "+DateTimeOffset.FromUnixTimeMilliseconds(ms).ToLocalTime().ToString("g"),Opacity=.7});
-        row.Children.Add(text);return row;
+    async Task WaitForAuthorization(StackPanel panel) {
+        var notice=new TextBlock{TextWrapping=TextWrapping.Wrap};
+        var image=AuthorizationScanner.CodeImage(Str(pairing!,"qrCode",$"cliper-pair-v1:{Str(pairing!,"code")}:{Str(pairing!,"fingerprint")}"));
+        var label=new TextBlock{IsTextSelectionEnabled=true,TextWrapping=TextWrapping.Wrap,FontSize=22};
+        var fingerprint=new TextBlock{IsTextSelectionEnabled=true,TextWrapping=TextWrapping.Wrap};
+        panel.Children.Insert(0,new TextBlock{Text=L10n.Text("使用已授权设备扫描二维码，或在该设备输入下面的授权码。"),TextWrapping=TextWrapping.Wrap});
+        panel.Children.Insert(1,image);panel.Children.Insert(2,label);panel.Children.Insert(3,fingerprint);panel.Children.Insert(4,notice);
+        var dialog=new ContentDialog{Title=L10n.Text("等待设备授权"),Content=new ScrollViewer{Content=panel,MaxHeight=560},PrimaryButtonText=L10n.Text("检查授权结果"),SecondaryButtonText=L10n.Text("更换授权码"),CloseButtonText=L10n.Text("关闭"),XamlRoot=body.XamlRoot};
+        using var stop=new CancellationTokenSource();bool checking=false;
+        var cancel=new Button{Content=L10n.Text("取消请求")};panel.Children.Add(cancel);
+        cancel.Click+=async(_,_)=>{
+            if(checking)return;checking=true;
+            try{await core.Call("cancelPairing");pairing=null;dialog.Hide();}
+            catch(Exception e){notice.Text=L10n.Text(e.Message);}
+            finally{checking=false;}
+        };
+        void UpdateCode() {
+            var value=Str(pairing!,"code");image.Source=AuthorizationScanner.CodeImage(Str(pairing!,"qrCode",$"cliper-pair-v1:{value}:{Str(pairing!,"fingerprint")}")).Source;
+            label.Text=string.Join("-",Enumerable.Range(0,3).Select(i=>value.Substring(i*4,4)));
+            fingerprint.Text=L10n.Text("请在两台设备上核对指纹。授权码会过期。")+"\n"+Str(pairing!,"fingerprint");
+            notice.Text=L10n.Text("授权码 5 分钟有效，批准后将自动连接。");
+        }
+        async Task Check(bool renew=false) {
+            if(checking||stop.IsCancellationRequested)return;
+            checking=true;dialog.IsPrimaryButtonEnabled=false;dialog.IsSecondaryButtonEnabled=false;
+            try {
+                var result=await core.Call(renew?"renewPairing":"completePairing",renew?null:new(){["passphrase"]=DeviceSecret.GetOrCreate()}) as JsonObject ?? new();
+                if(stop.IsCancellationRequested)return;
+                if(Str(result,"state") is "connected" or "syncRequired") {pairing=null;dialog.Hide();return;}
+                if(result["pairing"] is JsonObject next){pairing=next;UpdateCode();}
+            } catch(Exception e){if(!stop.IsCancellationRequested)notice.Text=L10n.Text(e.Message);}
+            finally {checking=false;dialog.IsPrimaryButtonEnabled=true;dialog.IsSecondaryButtonEnabled=true;}
+        }
+        async Task Monitor() {
+            try {while(!stop.IsCancellationRequested){await Task.Delay(3000,stop.Token);await Check();}}
+            catch(OperationCanceledException) { }
+        }
+        dialog.PrimaryButtonClick+=async(_,args)=>{args.Cancel=true;await Check();};
+        dialog.SecondaryButtonClick+=async(_,args)=>{args.Cancel=true;await Check(true);};
+        Task monitor=Task.CompletedTask;
+        dialog.Opened+=(_,_)=>monitor=Monitor();dialog.Closed+=(_,_)=>stop.Cancel();
+        UpdateCode();
+        try{await dialog.ShowAsync();}finally{stop.Cancel();await monitor;}
+        await Refresh();
     }
     async Task Devices() {
         var data=await core.Call("devices");var devices=data as JsonArray ?? (data as JsonObject)?["devices"] as JsonArray ?? new();
         var panel=new StackPanel{Spacing=8}; var revokePass=new PasswordBox{PlaceholderText=L10n.Text("原资料库口令（旧版凭据缺失时）")}; if(DeviceSecret.Read()==null)panel.Children.Add(revokePass);
         foreach(var device in devices.OfType<JsonObject>()) {
-            panel.Children.Add(DeviceIdentityCard(device,true));
+            panel.Children.Add(new TextBlock{Text=Str(device,"name",Str(device,"id"))});
             bool confirming=false;var cancelRevoke=new Button{Content=L10n.Text("取消撤销"),Visibility=Visibility.Collapsed};var revoke=new Button{Content=L10n.Text("撤销设备"),IsEnabled=device["current"]?.GetValue<bool>()!=true&&device["revoked"]?.GetValue<bool>()!=true};revoke.Click+=async (_,_)=>{revoke.IsEnabled=false;try{ if(!confirming){confirming=true;revoke.Content=L10n.Text("确认撤销：已解密内容无法远程抹除");cancelRevoke.Visibility=Visibility.Visible;revoke.IsEnabled=true;return;} var value=DeviceSecret.Read() ?? revokePass.Password;if(string.IsNullOrEmpty(value))throw new IOException(L10n.Text("请输入原资料库口令"));await core.Call("revoke",new(){["deviceId"]=Str(device,"id"),["passphrase"]=value});revokePass.Password="";cancelRevoke.Visibility=Visibility.Collapsed;}catch(Exception e){error.Text=L10n.Text(e.Message);revoke.IsEnabled=true;}};cancelRevoke.Click+=(_,_)=>{confirming=false;revoke.Content=L10n.Text("撤销设备");cancelRevoke.Visibility=Visibility.Collapsed;revokePass.Password="";};panel.Children.Add(revoke);panel.Children.Add(cancelRevoke);
         }
         await Dialog(L10n.Text("设备"),panel,L10n.Text("完成"));await Refresh();

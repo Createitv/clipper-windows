@@ -38,6 +38,10 @@ try {
 # Hosted images also carry newer SDKs. Pin SDK 8 for this project and use
 # Visual Studio MSBuild, which supplies the WinUI PRI resource build tasks.
 '{"sdk":{"version":"8.0.100","rollForward":"latestFeature","allowPrerelease":false}}' | Set-Content (Join-Path $repo 'global.json') -Encoding utf8
+& dotnet build (Join-Path $repo 'clients/windows-tests/LocalizationTests.csproj') "-p:BaseIntermediateOutputPath=$work/qr-tests/obj/" "-p:OutputPath=$work/qr-tests/bin/"
+if($LASTEXITCODE -ne 0){throw 'QR and localization test build failed'}
+& dotnet (Join-Path $work 'qr-tests/bin/LocalizationTests.dll')
+if($LASTEXITCODE -ne 0){throw 'QR and localization tests failed'}
 & msbuild (Join-Path $PSScriptRoot 'ClipWeave.csproj') /restore /t:Publish /p:Configuration=Release "/p:RuntimeIdentifier=win-$($Architecture.ToLower())" /p:Platform=$Architecture "/p:ClipWeaveCorePath=$core" "/p:BaseIntermediateOutputPath=$work/obj/" "/p:BaseOutputPath=$work/bin/" "/p:PublishDir=$publish/"
 if($LASTEXITCODE -ne 0){throw 'WinUI publish failed'}
 foreach($name in @('ClipWeave.exe','clipweave-core.exe')) {

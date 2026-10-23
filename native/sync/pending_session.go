@@ -93,6 +93,6 @@ func (e *Engine) PendingPairing() core.Object {
 	if e.pending == nil {
 		return nil
 	}
-	return core.Object{"id": e.pending.Pair.ID, "code": e.pending.Pair.Code, "expires": e.pending.Pair.Expires, "fingerprint": e.pending.Pair.Fingerprint, "email": e.pending.Email, "deviceInfo": e.pending.Pair.DeviceInfo, "created": e.pending.Pair.Created}
+	return core.Object{"id": e.pending.Pair.ID, "code": e.pending.Pair.Code, "expires": e.pending.Pair.Expires, "fingerprint": e.pending.Pair.Fingerprint, "qrCode": pairingQR(e.pending.Pair.Code, e.pending.Pair.Fingerprint), "email": e.pending.Email, "deviceInfo": e.pending.Pair.DeviceInfo, "created": e.pending.Pair.Created}
 }
 func (e *Engine) ForgetPendingSession() { e.mu.Lock(); defer e.mu.Unlock(); e.pending = nil }

@@ -32,6 +32,7 @@ type PairRequest struct {
 	VaultID     string     `json:"vaultId"`
 	Payload     string     `json:"payload,omitempty"`
 	Fingerprint string     `json:"fingerprint,omitempty"`
+	QRCode      string     `json:"qrCode,omitempty"`
 }
 type loginState struct {
 	PasswordSetupRequired bool   `json:"passwordSetupRequired"`
@@ -283,6 +284,7 @@ func (e *Engine) startPairing(ctx context.Context, p *pendingLogin) (core.Object
 	p.Private = private
 	p.Pair.PublicKey = public
 	p.Pair.Fingerprint = fingerprint(public)
+	p.Pair.QRCode = pairingQR(p.Pair.Code, p.Pair.Fingerprint)
 	return core.Object{"state": "pairing", "pairing": p.Pair}, nil
 }
 func (e *Engine) finishConnect(ctx context.Context, p *pendingLogin, pass string) (core.Object, error) {
@@ -433,12 +435,13 @@ func (e *Engine) inspectPairing(ctx context.Context, code string) (PairRequest, 
 	if err != nil {
 		return p, err
 	}
-	code = strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(code), "-", ""))
-	if len(code) < 8 || len(code) > 32 {
-		return p, errors.New("请输入完整授权码")
+	code, err = normalizePairingCode(code)
+	if err != nil {
+		return p, err
 	}
 	err = a.call(ctx, "GET", "/pairing/lookup?code="+url.QueryEscape(code), token, nil, &p)
 	p.Fingerprint = fingerprint(p.PublicKey)
+	p.QRCode = pairingQR(p.Code, p.Fingerprint)
 	return p, err
 }
 func (e *Engine) ApprovePairing(ctx context.Context, code, pass, expected string) (core.Object, error) {
