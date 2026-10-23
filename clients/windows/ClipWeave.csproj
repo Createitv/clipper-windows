@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyTitle>Clipper</AssemblyTitle><Product>Clipper</Product><Description>Clipper encrypted clipboard</Description>
+    <OutputType>WinExe</OutputType><TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <UseWinUI>true</UseWinUI><WindowsPackageType>None</WindowsPackageType>
+    <EnableMsixTooling>false</EnableMsixTooling><WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained><SelfContained>true</SelfContained><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>x64;ARM64</Platforms><RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup><PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" /></ItemGroup>
+  <ItemGroup><Content Include="$(ClipWeaveCorePath)" Link="clipweave-core.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup>
+    <Content Include="../../assets/brand/menu/cliper-tray-black.ico" Link="Assets/cliper-tray-black.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../assets/brand/menu/cliper-tray-white.ico" Link="Assets/cliper-tray-white.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="RequireExternalBuild" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(ClipWeaveCorePath)' == ''" Text="Use scripts/windows.sh or clients/windows/build.ps1 with external build/cache directories." />
+    <Error Condition="!Exists('$(ClipWeaveCorePath)')" Text="Build the Go core first." />
+  </Target>
+</Project>

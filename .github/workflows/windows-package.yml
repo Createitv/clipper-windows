@@ -1,0 +1,60 @@
+name: Package Clipper Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/windows-package.yml'
+      - 'clients/windows/**'
+      - 'native/**'
+      - 'assets/brand/menu/*.ico'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Windows ${{ matrix.architecture }}
+    runs-on: windows-2022
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x64, ARM64]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out Windows source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: native/go.mod
+          cache: false
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Set up Windows build tools
+        uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
+      - name: Build and package
+        id: build
+        env:
+          BUILD_ARCHITECTURE: ${{ matrix.architecture }}
+        run: ./clients/windows/ci-build.ps1 -Architecture $env:BUILD_ARCHITECTURE
+      - name: Upload development ZIP
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Clipper-Windows-${{ matrix.architecture }}
+          path: ${{ steps.build.outputs.artifact_path }}/*
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0

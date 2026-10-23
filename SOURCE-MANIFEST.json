@@ -1,0 +1,145 @@
+{
+  "scope": "Windows client and its Go build dependency closure only",
+  "files": [
+    {
+      "path": ".github/workflows/windows-package.yml",
+      "sha256": "cef2b7d6e21f891d841cedff39cb08e65b60bc176e0e27228ef79dd9e7a3bcda"
+    },
+    {
+      "path": "assets/brand/menu/cliper-tray-black.ico",
+      "sha256": "fc94fdc4b98428e78384e6163bc7cb15d8acf9dbed994a3fc882bcb3066072b2"
+    },
+    {
+      "path": "assets/brand/menu/cliper-tray-white.ico",
+      "sha256": "a049d0dabd70a8d41034299337a7ab00c7b05469cf1feb3f606e2f171a91078d"
+    },
+    {
+      "path": "clients/windows/App.xaml",
+      "sha256": "b862bb394f8d40c26e0a21653872008f0242c2c0723920e1e5e81a7bae4ad646"
+    },
+    {
+      "path": "clients/windows/App.xaml.cs",
+      "sha256": "189d8acbc9c38b5f3ddf16627ec72896770dfdafb695ba9c18437b854ae541b4"
+    },
+    {
+      "path": "clients/windows/ClipWeave.csproj",
+      "sha256": "3e76130a425081b231635ee7dcb7f5ddce5c93d488bdafef63ef11821006e466"
+    },
+    {
+      "path": "clients/windows/DeviceSecret.cs",
+      "sha256": "cc9684383210401b38e0442a259fe9a1d188272ee8ffbc6c50c65b20367667c2"
+    },
+    {
+      "path": "clients/windows/GoClient.cs",
+      "sha256": "f4b86bcdcb2cd7f439d3feef0c86d0bfd9d1488752c6e78344ec1d0f67371ac1"
+    },
+    {
+      "path": "clients/windows/Localization.cs",
+      "sha256": "86df2d77fe67dfe97d4cc272b2725b32e1e03553a851e4836ea8d582fadcd093"
+    },
+    {
+      "path": "clients/windows/MainWindow.cs",
+      "sha256": "2fbaa499929e819d90d73e7ac907b8187e80b69e09c23d4b4e7ad037979b67fd"
+    },
+    {
+      "path": "clients/windows/app.manifest",
+      "sha256": "0c1ef81553304f22ef49285832eba5afc0161a341ea29b9822560bcf9b057805"
+    },
+    {
+      "path": "clients/windows/build.ps1",
+      "sha256": "02deb61127b2a1db0c2447d3be67a4554eccb7b28ce4bf0d3aa827ec096756a9"
+    },
+    {
+      "path": "clients/windows/ci-build.ps1",
+      "sha256": "846fbed78df55bd0cf80fbf2d7941e4f6858b283a4ebe149a11a449432587764"
+    },
+    {
+      "path": "native/bridge/client.go",
+      "sha256": "e6ba3caa9d67ce3b6eeea8ea36407c32bc1e9c5168fd1eb1df6af92bc5e965bb"
+    },
+    {
+      "path": "native/bridge/lock_windows.go",
+      "sha256": "e9d67f9941608fd746abf0dde60a20afc928b3873ed0b4b6c71fc4ab1c01094e"
+    },
+    {
+      "path": "native/cmd/clipweave-core/main.go",
+      "sha256": "eec0070f244b311d52de1e9a51416ea2af5ea3e682aa388b2add209028530fdb"
+    },
+    {
+      "path": "native/core/access.go",
+      "sha256": "949866c9f5467fc721d88a4dce04874f7df4bdd14e8590d506951df75134d420"
+    },
+    {
+      "path": "native/core/attachments.go",
+      "sha256": "6e621c8cf4c6c83dbbb959849836753d73d383b43407f6df1af46710b62198b4"
+    },
+    {
+      "path": "native/core/crypto.go",
+      "sha256": "bc433c8cb6183d8a58257590449573addb458c2e3de334c5425f22b13e96824a"
+    },
+    {
+      "path": "native/core/export.go",
+      "sha256": "29a140b544e114e49886ebc0a24729cd06618be9a89d20f51d93a7166a6de0cd"
+    },
+    {
+      "path": "native/core/ingress.go",
+      "sha256": "10e6810403c905c320fe1a0cc5440355676a9442a4185118c2355f458f98e9d6"
+    },
+    {
+      "path": "native/core/operations.go",
+      "sha256": "b96de9cff64e56b6a381bece1b9a15bd9d8d8204eeaa853d79eb8f9c68d53a48"
+    },
+    {
+      "path": "native/core/profiles.go",
+      "sha256": "3a744c48b6c09e92624340ce7b21c0fbef054d5d1c29d551bbe3cfb570edc437"
+    },
+    {
+      "path": "native/core/rename_windows.go",
+      "sha256": "7b36f8069d81ac439efcfbf6756cb878d6f67b340c5276150572c43a5d0b671c"
+    },
+    {
+      "path": "native/core/unlock_access.go",
+      "sha256": "a0b454fcc9cb99d29db7f4e2b7decc3d27f6721973c8d0713ecea1d64e660848"
+    },
+    {
+      "path": "native/core/vault.go",
+      "sha256": "f8ca71342750721958397d7a8ad4c01665168b5a32ee8cf901bc73a8cf8ce771"
+    },
+    {
+      "path": "native/go.mod",
+      "sha256": "9c029be6b77519b02bcdb8fbd1cb70d06426a503a64966be92236a54b50bfe34"
+    },
+    {
+      "path": "native/go.sum",
+      "sha256": "937c28416f64addcda28d4c0facf9ac592d9003ff8c341b6f98d1dff8585bb74"
+    },
+    {
+      "path": "native/protocol/request.go",
+      "sha256": "ee506bf6e7a381b0eee767040413008bf82683800986773412fb0d5faef80a00"
+    },
+    {
+      "path": "native/sync/api.go",
+      "sha256": "aed206b66b20c84e44cf362564b256ea3e619d4901632675eaaf9b54a035092d"
+    },
+    {
+      "path": "native/sync/device_info.go",
+      "sha256": "c1d568705b3c91e1dedff523fe4e9b5d1aee2616396e2216a3144a85b52516d2"
+    },
+    {
+      "path": "native/sync/engine.go",
+      "sha256": "03140b1e3a2a48d5258cfc71dd43793d3d73cfdf2e6fef8a93be773c165dbfb3"
+    },
+    {
+      "path": "native/sync/pairing.go",
+      "sha256": "83a7b947fba3bccca3ec4845252f7a9a09355b8ae98a6e33f5ea291d3b706c6d"
+    },
+    {
+      "path": "native/sync/pending_session.go",
+      "sha256": "3a5faccd7a73a3ec1ffe0b063cf8cf56100a85d33ffa7c59af10c761e5770645"
+    },
+    {
+      "path": "native/sync/session.go",
+      "sha256": "5c129c84b7d923241279eb9e5d151f22ecaa642fe47c4f8c91d2eac03b50cbba"
+    }
+  ]
+}
