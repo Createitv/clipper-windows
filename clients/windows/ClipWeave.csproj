@@ -10,8 +10,14 @@
   </PropertyGroup>
   <ItemGroup><PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" /></ItemGroup>
   <ItemGroup><PackageReference Include="ZXing.Net" Version="0.16.11" /></ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="WinUIEx" Version="2.6.0" />
+    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.2.0" />
+  </ItemGroup>
   <ItemGroup><Content Include="$(ClipWeaveCorePath)" Link="clipweave-core.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
   <ItemGroup>
+    <Content Include="../../assets/brand/cliper-icon-1024.png" Link="Assets/CliperBrand.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../assets/brand/LoginArtwork.png" Link="Assets/LoginArtwork.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../assets/brand/menu/cliper-tray-black.ico" Link="Assets/cliper-tray-black.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../assets/brand/menu/cliper-tray-white.ico" Link="Assets/cliper-tray-white.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>

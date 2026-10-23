@@ -262,6 +262,9 @@ func (e *Engine) sync(ctx context.Context) (result error) {
 		e.setStatus("资料库已锁定")
 		return nil
 	}
+	if err := e.vault.EnsureGroupsSynced(); err != nil {
+		return err
+	}
 	st, err := e.vault.Snapshot()
 	if err != nil {
 		return err

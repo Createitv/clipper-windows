@@ -6,6 +6,7 @@
   <ItemGroup><Compile Include="../windows/Localization.cs" Link="Localization.cs" /></ItemGroup>
   <ItemGroup>
     <Compile Include="../windows/AuthorizationCode.cs" Link="AuthorizationCode.cs" />
+    <Compile Include="../windows/ClipPresentation.cs" Link="ClipPresentation.cs" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
   </ItemGroup>
 </Project>

@@ -22,3 +22,12 @@ var qr=ClipWeave.AuthorizationCode.Encode(payload);
 Equal(ClipWeave.AuthorizationCode.Decode(qr.Pixels,qr.Width,qr.Height) ?? "",payload);
 foreach(var invalid in new[]{"cliper-pair-v1:ABCD2345WXYZ:","cliper-pair-v2:ABCD2345WXYZ:0123456789ABCDEF"})
     if(ClipWeave.AuthorizationCode.Payload(invalid)!=null)throw new Exception("Accepted unbound authorization QR");
+var clip=new System.Text.Json.Nodes.JsonObject{["type"]="text",["text"]="Design https://cliper.dev/features",["group"]="Work",["favourite"]=true};
+Equal(ClipWeave.ClipPresentation.Kind(clip),"link");
+if(!ClipWeave.ClipPresentation.Matches(clip,"CLIPER","★","link") || ClipWeave.ClipPresentation.Matches(clip,"","Other","") || ClipWeave.ClipPresentation.Matches(clip,"","Work","image"))throw new Exception("History filters did not intersect");
+var bounds=ClipWeave.ClipPresentation.PanelBounds(-1920,0,1920,1040,1.5);
+if(bounds.X!=-1902 || bounds.Y!=377 || bounds.Width!=1884 || bounds.Height!=645)throw new Exception("Scaled multi-monitor panel placement failed");
+var small=ClipWeave.ClipPresentation.PanelBounds(10,20,300,200,1);
+if(small.X<10 || small.Y<20 || small.X+small.Width>310 || small.Y+small.Height>220)throw new Exception("Panel exceeds small work area");
+if(!ClipWeave.ClipPresentation.IsSensitiveFormat("ExcludeClipboardContentFromMonitorProcessing") || ClipWeave.ClipPresentation.IsSensitiveFormat("HTML Format"))throw new Exception("Privacy format filtering failed");
+Console.WriteLine("History filters, DPI placement and privacy format tests passed");

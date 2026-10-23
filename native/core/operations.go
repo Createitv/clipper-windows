@@ -1,6 +1,7 @@
 package core
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"net/url"
@@ -288,6 +289,51 @@ func (v *Vault) AddGroup(name string) error {
 			}
 		}
 		v.addGroup(name)
+		return v.recordGroup(name)
+	})
+}
+
+// Group definitions use invisible tombstones in the existing encrypted operation
+// stream. Older clients already merge their group field and hide deleted items.
+// This keeps empty groups compatible without exposing names to the server.
+func (v *Vault) recordGroup(name string) error {
+	id := fmt.Sprintf("group_%x", sha256.Sum256([]byte(name)))
+	if v.state.Clips[id] != nil {
+		return nil
+	}
+	c := Object{"id": id, "type": "group", "group": name, "deleted": true, "version": v.tick(), "author": v.state.DeviceID}
+	if err := v.record(Operation{Kind: "delete", Clip: c}); err != nil {
+		return err
+	}
+	v.state.Clips[id] = c
+	return nil
+}
+
+// EnsureGroupsSynced migrates existing local-only groups once, and is retry-safe.
+func (v *Vault) EnsureGroupsSynced() error {
+	v.mu.Lock()
+	if err := v.require(); err != nil {
+		v.mu.Unlock()
+		return err
+	}
+	missing := false
+	for _, name := range v.state.Groups {
+		id := fmt.Sprintf("group_%x", sha256.Sum256([]byte(name)))
+		if v.state.Clips[id] == nil {
+			missing = true
+			break
+		}
+	}
+	v.mu.Unlock()
+	if !missing {
+		return nil
+	}
+	return v.mutate(func() error {
+		for _, name := range v.state.Groups {
+			if err := v.recordGroup(name); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 }
