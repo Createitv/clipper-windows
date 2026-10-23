@@ -7,7 +7,7 @@
     },
     {
       "path": ".github/workflows/windows-release.yml",
-      "sha256": "b0fb58078d6debca5dfaff29fe730b040baed03661b75d17020202b3db96b5dd"
+      "sha256": "a1d1f356ce6fce53d172d7ac156f7da7dd7bd394fc5d83ec71b3823f7c007a10"
     },
     {
       "path": "assets/brand/menu/cliper-tray-black.ico",

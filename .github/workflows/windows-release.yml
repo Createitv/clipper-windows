@@ -79,7 +79,9 @@ jobs:
                   offset = struct.unpack_from('<I', data, 0x3c)[0]
                   assert data[offset:offset+4] == b'PE\0\0', name
                   assert struct.unpack_from('<H', data, offset+4)[0] == 0x8664, name + ' must be x64'
-              assert 'Microsoft.UI.Xaml.dll' in files, 'WinUI runtime missing'
+              xaml_files = sorted(name for name in files if 'xaml' in name.lower())
+              print('XAML runtime files:', xaml_files)
+              assert any(name.lower() == 'microsoft.ui.xaml.dll' for name in files), 'WinUI runtime missing: ' + repr(xaml_files)
               print(f'Verified x64 ZIP: {len(files)} files, all SHA-256 checks passed')
           notes = root / 'release-notes.md'
           notes.write_text('''Windows x64 预览版，适用于 Intel / AMD 64 位 Windows 电脑。
