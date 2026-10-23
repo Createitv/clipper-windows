@@ -76,6 +76,7 @@ if($Architecture -eq 'x64') {
         Start-Sleep -Seconds 12
         $gui.Refresh()
         if($gui.HasExited){throw "Clipper GUI exited during startup: $($gui.ExitCode)"}
+        Get-Content (Join-Path $env:LOCALAPPDATA 'ClipWeave/ui-errors.log') -ErrorAction SilentlyContinue | Write-Output
         if($gui.MainWindowTitle -notmatch 'Settings|设置'){throw "Settings window did not open: $($gui.MainWindowTitle)"}
         "Settings startup survived; window title: $($gui.MainWindowTitle)" | Write-Output
     } finally {

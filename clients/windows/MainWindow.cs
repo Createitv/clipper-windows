@@ -59,7 +59,7 @@ public sealed partial class MainWindow : Window {
         try {
             if(closed)return;busy=true;error.Text="";viewport.IsEnabled=false;
             try{await operation();}
-            catch(Exception e){if(e is BridgeException failure&&failure.Payload!=null){await SaveRecovery(failure.Payload);try{await Refresh();}catch{}}error.Text=L10n.Text(e.Message);SetNotice(error.Text);}
+            catch(Exception e){UiDiagnostics.Record("main-operation",e);if(e is BridgeException failure&&failure.Payload!=null){await SaveRecovery(failure.Payload);try{await Refresh();}catch{}}error.Text=L10n.Text(e.Message);SetNotice(error.Text);}
         } finally{busy=false;viewport.IsEnabled=true;operations.Release();StateChanged?.Invoke();}
     }
     internal Task<JsonNode?> CallCore(string action,JsonObject? args=null)=>core.Call(action,args);
