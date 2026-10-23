@@ -70,7 +70,6 @@ public sealed partial class MainWindow : Window {
     internal Task SyncNow()=>Action("sync");
     internal bool CanUnlock=>status["exists"]?.GetValue<bool>()==true&&DeviceSecret.Read()!=null;
     internal async Task UnlockDevice(){var secret=DeviceSecret.Read()??throw new IOException(L10n.Text("请输入原资料库口令"));await core.Call("unlock",new(){["passphrase"]=secret});await Refresh();if(!AccountReady)throw new IOException(L10n.Text("请重新登录账户"));loginWindow?.Close();Shell.ShowPanel();}
-    internal async Task LockVault(){previewWindow?.Close();thumbnails.Clear();thumbnailEpoch++;await Action("lock");Shell.HidePanel();ShowLogin();}
     internal async Task ToggleCapture(){var config=status["config"] as JsonObject??new();await SaveConfig(new(){["captureEnabled"]=config["captureEnabled"]?.GetValue<bool>()!=true});}
     internal async Task SaveConfig(JsonObject values){await core.Call("config",new(){["values"]=values});await Refresh();}
     internal void OpenSettings(){
@@ -83,7 +82,7 @@ public sealed partial class MainWindow : Window {
     internal void SetNotice(string text){state.Text=text;}
     internal void FocusSearch(){search.Focus(FocusState.Programmatic);}
     Button Button(string title,Func<Task> action) { var button=new Button{Content=title}; button.Click+=async (_,_)=>await Run(action);return button; }
-    async Task Action(string name,JsonObject? args=null) {await core.Call(name,args);if(name=="lock")ClearPreviews();await Refresh();}
+    async Task Action(string name,JsonObject? args=null) {await core.Call(name,args);await Refresh();}
     static string Str(JsonObject value,string key,string fallback="")=> key=="status" ? L10n.Text(value[key]?.ToString() ?? fallback) : value[key]?.ToString() ?? fallback;
     bool sessionRemembered;
     internal bool AccountReady => status["unlocked"]?.GetValue<bool>()==true && (status["config"] as JsonObject)?["connected"]?.GetValue<bool>()==true;

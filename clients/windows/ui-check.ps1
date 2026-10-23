@@ -38,7 +38,9 @@ try {
     $window=SettingsWindow
     foreach($tab in @('general','account','authorization','membership','privacy','about')){
         InvokeControl (Control $window "settings-tab-$tab")
-        Write-Output "Settings page opened: $tab"
+        $lockAction=$window.FindFirst([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.OrCondition]::new([System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty,'Lock library'),[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty,'锁定资料库')))
+        if($null -ne $lockAction){throw "Removed library lock action is still present on $tab"}
+        Write-Output "Settings page opened without library lock: $tab"
         if($tab -eq 'authorization'){
             $bounds=(Control $window 'settings-auth-code').Current.BoundingRectangle
             if($bounds.Right -gt $window.Current.BoundingRectangle.Right -or $bounds.Left -lt $window.Current.BoundingRectangle.Left){throw 'Authorization form exceeds the visible window'}

@@ -7,7 +7,7 @@
     },
     {
       "path": ".github/workflows/windows-release.yml",
-      "sha256": "9e12a1135164c5c7323fbf1a3ec0c9b066ce2b37473810237c3bff4f012b36d9"
+      "sha256": "ee8a87a374e20690f0751771007f4d6cbda23b5c59b90d1af64ffaa4cd1d7589"
     },
     {
       "path": "assets/brand/LoginArtwork.png",
@@ -63,7 +63,7 @@
     },
     {
       "path": "clients/windows/ClipWeave.csproj",
-      "sha256": "476f06497d5ce676b07b994d40fde88f96d13740c66fc54eb8f18fd603282d20"
+      "sha256": "872d4803be11b2633a9602c475acad819e6bd595cb143257994ea168b46244c8"
     },
     {
       "path": "clients/windows/ClipboardAdapter.cs",
@@ -83,7 +83,7 @@
     },
     {
       "path": "clients/windows/Localization.cs",
-      "sha256": "7c280d389acc3ca2cb70e20929be6576fcbfab606b3dac27b9a0f22cf049bb04"
+      "sha256": "c11d5ae78d3ffce4d10106ef1d4059d0435b91b3bc2e3bdfff6e741b373e2f9d"
     },
     {
       "path": "clients/windows/LoginWindow.cs",
@@ -91,11 +91,11 @@
     },
     {
       "path": "clients/windows/MainPanel.cs",
-      "sha256": "3e9e5eabc80be7b5ba84364d5e686da049c0ec6897d6d85e7c937edb2e48c10c"
+      "sha256": "ad011f0172b73529957c5a61717aa1cfa35892976fd24a87936b751dc852f9a1"
     },
     {
       "path": "clients/windows/MainWindow.cs",
-      "sha256": "e764a2e29c357175f18f9cb40a107ac31290e902f61e7f3ccf00b0b8e3fe1131"
+      "sha256": "1bf3cb2645a1887c3023462b7739cc0047132aebd05e582ceb13da467c1ddc75"
     },
     {
       "path": "clients/windows/SettingsValues.cs",
@@ -103,7 +103,7 @@
     },
     {
       "path": "clients/windows/SettingsWindow.cs",
-      "sha256": "2b80c9b68140ac994e0e0c27023267f45be9dbfecd065966a06d945a5f05d8a4"
+      "sha256": "b5dfe99d102d66ba9556d155f0d69d25f5e6bdad1a61691d0e5cb2db1c6dc26e"
     },
     {
       "path": "clients/windows/UiDiagnostics.cs",
@@ -119,11 +119,11 @@
     },
     {
       "path": "clients/windows/WindowsShell.cs",
-      "sha256": "2388dfd6211b719dcf91db9c3fc7bedec033a4d23eff805a96e1f318b44fb303"
+      "sha256": "b580857336910c71a9d649974df1f54a8056707d8711ae5d3c7c8e0221c64e9f"
     },
     {
       "path": "clients/windows/app.manifest",
-      "sha256": "751e98f7888fdcdae585e55f2a0e1aab8507adaa5a9feca8d6e49728a1203f7b"
+      "sha256": "6a1af732cc24c0abef02b3b3a25583fa172854d68c5a48520568caf7f0b654bc"
     },
     {
       "path": "clients/windows/build.ps1",
@@ -135,7 +135,7 @@
     },
     {
       "path": "clients/windows/ui-check.ps1",
-      "sha256": "d6d99a1c3dd7674b3eedd82e32cfa9ae10d19d75704f334f7e52fc748973569c"
+      "sha256": "8c3a81e95486853b618e63a5bfb7ad0f45c0de2eecde7170e1dcfd10dae9aff1"
     },
     {
       "path": "native/bridge/client.go",

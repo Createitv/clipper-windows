@@ -53,7 +53,7 @@ public sealed partial class MainWindow {
         var pin=Palette.Icon("\uE718","固定工具栏",()=>{});pin.Click+=(_,_)=>{Preferences.Pinned=!Preferences.Pinned;Preferences.Save();pin.Foreground=Preferences.Pinned?Palette.Blue:Palette.Muted;};pin.Foreground=Preferences.Pinned?Palette.Blue:Palette.Muted;actions.Children.Add(pin);
         var add=Palette.Icon("\uE710","添加",()=>{});var menu=new MenuFlyout();
         MenuItem(menu,"添加文字…",()=>_=Run(AddText));MenuItem(menu,"导入文件…",()=>_=Run(ImportFile));MenuItem(menu,"导入文件夹…",()=>_=Run(ImportFolder));menu.Items.Add(new MenuFlyoutSeparator());
-        MenuItem(menu,(status["config"] as JsonObject)?["captureEnabled"]?.GetValue<bool>()==true?"暂停采集":"启用采集",()=>_=Run(ToggleCapture));MenuItem(menu,"锁定资料库",()=>_=Run(LockVault));TrackMenu(menu);add.Flyout=menu;add.IsEnabled=AccountReady;actions.Children.Add(add);
+        MenuItem(menu,(status["config"] as JsonObject)?["captureEnabled"]?.GetValue<bool>()==true?"暂停采集":"启用采集",()=>_=Run(ToggleCapture));TrackMenu(menu);add.Flyout=menu;add.IsEnabled=AccountReady;actions.Children.Add(add);
         actions.Children.Add(Palette.Icon("\uE713","设置",OpenSettings));
         body.Children.Add(toolbar);
         var navigation=new Grid{Padding=new Thickness(22,0,22,0),BorderBrush=Palette.Border,BorderThickness=new Thickness(0,1,0,1)};navigation.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});navigation.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});Grid.SetRow(navigation,1);body.Children.Add(navigation);

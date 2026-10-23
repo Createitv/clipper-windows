@@ -84,7 +84,6 @@ sealed class WindowsShell : IDisposable {
         Item("打开 Clipper",ShowPanel);
         Item("暂停／启用采集",()=>_=window.Execute(()=>window.ToggleCapture()));
         Item("立即同步",()=>_=window.Execute(window.SyncNow));
-        Item("锁定资料库",()=>_=window.Execute(window.LockVault));
         menu.Items.Add(new MenuFlyoutSeparator());Item("设置…",window.OpenSettings);Item("退出 Clipper",Quit);
         menu.Opening+=(_,_)=>MenuOpen=true;menu.Closed+=(_,_)=>MenuOpen=false;
         icon=new System.Drawing.Icon(Path.Combine(AppContext.BaseDirectory,"Assets","cliper-tray-black.ico"));

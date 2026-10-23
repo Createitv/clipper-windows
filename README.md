@@ -87,3 +87,5 @@ Closing settings or the panel keeps the application resident. **Quit Clipper**
 is the explicit exit action. CI exercises these paths with Windows UI
 automation in a fresh hosted profile; never run its UI test script against
 a personal vault.
+
+The manual library-lock feature has been removed from settings and menus. Encryption, account/device authorization and recovery remain in place. Closing the panel keeps Clipper running in the background.
