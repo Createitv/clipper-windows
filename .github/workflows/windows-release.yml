@@ -88,6 +88,10 @@ jobs:
           notes = root / 'release-notes.md'
           notes.write_text('''Windows x64 预览版，适用于 Intel / AMD 64 位 Windows 电脑。
 
+          本次修复后台刷新中断滑动与控件闪烁、设置页标签控件创建失败；支持拖动顶部或在设置中调整面板高度，始终保持底部定位。设置页改为六类分组表单，补齐设备、授权、恢复、会员及隐私项目。
+
+          通过 Windows UI 自动化逐页打开、调节高度、关闭面板与设置后保持后台常驻、重新打开以及明确退出的检查。
+
           本版重新设计为与 macOS 一致的白色横向卡片面板，在 Windows 任务栏上方显示。包含搜索、分组、收藏、类型筛选、内容预览、托盘和 Ctrl+Shift+V 快捷键，以及六个设置分页；保留二维码 / 12 位授权码。
 
           下载 **Clipper-Windows-x64.zip**，完整解压后运行 **Clipper.exe**。请保留同目录中的 clipweave-core.exe 和所有 DLL，无需安装 Go 或 .NET 开发工具。

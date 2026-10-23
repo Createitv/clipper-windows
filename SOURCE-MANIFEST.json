@@ -3,11 +3,11 @@
   "files": [
     {
       "path": ".github/workflows/windows-package.yml",
-      "sha256": "a3c8a5b041c23cad0be6bd883a9876c0012b3dea982c6dabafd6ede425567f4c"
+      "sha256": "f350f2ce10cdbc09050a83804fb208a4356bacc85595fbf0f90a665a3fe1a4e4"
     },
     {
       "path": ".github/workflows/windows-release.yml",
-      "sha256": "1e3dfe6fe207abccd8cff6c5c8901f7e4780abd9d7fa120b87a86f06d2265ac6"
+      "sha256": "9e12a1135164c5c7323fbf1a3ec0c9b066ce2b37473810237c3bff4f012b36d9"
     },
     {
       "path": "assets/brand/LoginArtwork.png",
@@ -95,7 +95,7 @@
     },
     {
       "path": "clients/windows/MainWindow.cs",
-      "sha256": "5878b4bfb058b503d1086e1c2a4d862ee678c3c96926010ee495bf231890d7ac"
+      "sha256": "e764a2e29c357175f18f9cb40a107ac31290e902f61e7f3ccf00b0b8e3fe1131"
     },
     {
       "path": "clients/windows/SettingsValues.cs",
@@ -103,7 +103,7 @@
     },
     {
       "path": "clients/windows/SettingsWindow.cs",
-      "sha256": "7f07fef0d1a84fa71c76f535054b19e70e4b6127447e9eb96c6a8b2ce26b79e2"
+      "sha256": "ac93a47bc1b910adea7d05bac98c4ca0ad65828272060d4c81bb6a6afd7e1af0"
     },
     {
       "path": "clients/windows/UiDiagnostics.cs",
@@ -119,7 +119,7 @@
     },
     {
       "path": "clients/windows/WindowsShell.cs",
-      "sha256": "223812799fa712077db9587497679f80d4f5754e0cef3ed71cf102be31b4f47e"
+      "sha256": "35a6f82e1886b688e7ee69c68074ab677c1aada14826ebd572f4ead57c06f102"
     },
     {
       "path": "clients/windows/app.manifest",
@@ -135,7 +135,7 @@
     },
     {
       "path": "clients/windows/ui-check.ps1",
-      "sha256": "b01b3759e351f7ee1c6b1670891b268536b88f3fc7c083f0b6816eb47961e4ee"
+      "sha256": "8a961a5f774849c8751a712061a09e9c3b960ed67a0dc953eeef6ebcc16cd09d"
     },
     {
       "path": "native/bridge/client.go",

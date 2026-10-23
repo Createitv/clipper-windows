@@ -1,5 +1,6 @@
 param([Parameter(Mandatory=$true)][string]$Executable,[Parameter(Mandatory=$true)][string]$OutputDirectory)
 $ErrorActionPreference='Stop'
+if($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:RUNNER_OS -ne 'Windows'){throw 'UI tests require a fresh GitHub-hosted Windows profile; do not run against a personal vault.'}
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 Add-Type -AssemblyName System.Drawing
@@ -7,6 +8,8 @@ Add-Type @'
 using System;
 using System.Runtime.InteropServices;
 public static class ClipperUiNative {
+ [DllImport("user32.dll",CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string className,string windowName);
+ [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hwnd,out uint processId);
  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hwnd,uint message,IntPtr wparam,IntPtr lparam);
 }
 '@
@@ -50,6 +53,12 @@ try {
     if($slider.Current.Value -ne 520){throw 'Panel height control did not retain value'}
     [ClipperUiNative]::PostMessage([IntPtr]$window.Current.NativeWindowHandle,0x0010,[IntPtr]::Zero,[IntPtr]::Zero) | Out-Null
     Start-Sleep -Seconds 3;$gui.Refresh();if($gui.HasExited){throw 'Closing settings terminated the resident app'}
+    $main=[ClipperUiNative]::FindWindow($null,'Clipper');[uint32]$mainPid=0
+    if($main -eq [IntPtr]::Zero){throw 'Resident main window was destroyed'}
+    [ClipperUiNative]::GetWindowThreadProcessId($main,[ref]$mainPid) | Out-Null
+    if($mainPid -ne $gui.Id){throw 'Unexpected resident window owner'}
+    [ClipperUiNative]::PostMessage($main,0x0010,[IntPtr]::Zero,[IntPtr]::Zero) | Out-Null
+    Start-Sleep -Seconds 2;$gui.Refresh();if($gui.HasExited){throw 'Closing the panel terminated the app'}
     $second=Start-Process $Executable -ArgumentList '--settings' -PassThru
     $window=SettingsWindow
     InvokeControl (Control $window 'settings-tab-general')
@@ -58,6 +67,7 @@ try {
     InvokeControl (Control $window 'settings-tab-about')
     InvokeControl (Control $window 'settings-quit')
     if(-not $gui.WaitForExit(15000)){throw 'Explicit Quit did not terminate the app'}
+    'Settings pages, height preference, close-to-background, reopen and explicit Quit passed' | Set-Content (Join-Path $OutputDirectory 'result.txt') -Encoding utf8
     Write-Output 'Settings pages, height preference, close-to-background, reopen and explicit Quit passed'
 } finally {
     $log=Join-Path $env:LOCALAPPDATA 'ClipWeave/ui-errors.log'

@@ -37,7 +37,7 @@ sealed class WindowsShell : IDisposable {
         saveHeight.Tick+=(_,_)=>{saveHeight.Stop();try{window.Preferences.Save();}catch(Exception error){UiDiagnostics.Record("save-panel-height",error);}};
         var grip=new Border{Width=100,Height=10,VerticalAlignment=VerticalAlignment.Top,HorizontalAlignment=HorizontalAlignment.Center,Background=Palette.White,Child=new Border{Width=38,Height=3,CornerRadius=new CornerRadius(2),Background=Palette.Muted,VerticalAlignment=VerticalAlignment.Center}};
         ToolTipService.SetToolTip(grip,L10n.Text("拖动调整高度，面板始终贴底"));
-        grip.PointerPressed+=(_,e)=>{if(!e.GetCurrentPoint(grip).Properties.IsLeftButtonPressed&&e.Pointer.PointerDeviceType==Microsoft.UI.Input.PointerDeviceType.Mouse)return;GetCursorPos(out var point);resizeStartY=point.Y;resizeStartHeight=window.Preferences.PanelHeight;resizeScale=Math.Max(1,GetDpiForWindow(hwnd)/96.0);resizing=grip.CapturePointer(e.Pointer);e.Handled=true;};
+        grip.PointerPressed+=(_,e)=>{if(!e.GetCurrentPoint(grip).Properties.IsLeftButtonPressed&&e.Pointer.PointerDeviceType==Microsoft.UI.Input.PointerDeviceType.Mouse)return;GetCursorPos(out var point);resizeStartY=point.Y;resizeScale=Math.Max(1,GetDpiForWindow(hwnd)/96.0);resizeStartHeight=window.AppWindow.Size.Height/resizeScale;resizing=grip.CapturePointer(e.Pointer);e.Handled=true;};
         grip.PointerMoved+=(_,e)=>{if(!resizing)return;GetCursorPos(out var point);SetPanelHeight(resizeStartHeight+(resizeStartY-point.Y)/resizeScale);e.Handled=true;};
         grip.PointerReleased+=(_,e)=>{resizing=false;grip.ReleasePointerCapture(e.Pointer);e.Handled=true;};grip.PointerCaptureLost+=(_,_)=>resizing=false;
         window.Root.Children.Add(grip);

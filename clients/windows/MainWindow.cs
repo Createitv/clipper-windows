@@ -38,6 +38,7 @@ public sealed partial class MainWindow : Window {
     int dialogDepth;
     SettingsWindow? settingsWindow;
     LoginWindow? loginWindow;
+    bool manualLogin;
     Window? previewWindow;
     internal event System.Action? StateChanged;
     internal JsonObject Status=>status;
@@ -77,8 +78,8 @@ public sealed partial class MainWindow : Window {
         catch(Exception failure){UiDiagnostics.Record("open-settings",failure);settingsWindow=null;SetNotice(L10n.Text(failure.Message));if(AccountReady)Shell.ShowPanel();else ShowLogin();}
     }
     internal void SettingsClosed(){settingsWindow=null;}
-    internal void ShowLogin(){if(closed)return;Shell.HidePanel();loginWindow??=new LoginWindow(this);loginWindow.Activate();}
-    internal void LoginClosed(){loginWindow=null;}
+    internal void ShowLogin(bool manual=false){if(closed)return;if(manual)manualLogin=true;Shell.HidePanel();loginWindow??=new LoginWindow(this);loginWindow.Activate();}
+    internal void LoginClosed(){loginWindow=null;manualLogin=false;}
     internal void SetNotice(string text){state.Text=text;}
     internal void FocusSearch(){search.Focus(FocusState.Programmatic);}
     Button Button(string title,Func<Task> action) { var button=new Button{Content=title}; button.Click+=async (_,_)=>await Run(action);return button; }
@@ -104,7 +105,7 @@ public sealed partial class MainWindow : Window {
         if(body.Children.Count==0||wasUnlocked!=AccountReady) Render();
         else { UpdateSyncIndicator();if(AppWindow.IsVisible){if(renderedGroups!=(status["groups"]?.ToJsonString()??""))UpdateGroups();RenderHistory();} }
         if(wasUnlocked&&!AccountReady){settingsWindow?.Close();ShowLogin();}
-        if(AccountReady&&loginWindow!=null&&!loginWindow.IsBusy){loginWindow.Close();Shell.ShowPanel();}
+        if(AccountReady&&loginWindow!=null&&!loginWindow.IsBusy&&!manualLogin){loginWindow.Close();Shell.ShowPanel();}
         StateChanged?.Invoke();
     }
     internal async Task<ContentDialogResult> Dialog(string title,UIElement content,string primary) {

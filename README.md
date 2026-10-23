@@ -66,3 +66,24 @@ Window integration uses WinUIEx 2.6.0 and the tray uses H.NotifyIcon.WinUI
 supplements presentation/QR/localization tests; camera use, tray behavior,
 multi-monitor display and paste into other apps still require Windows hardware
 acceptance. Windows membership management opens the web account billing page.
+
+## Refresh and settings fixes
+
+Background polling no longer disables the panel. Unchanged history retains
+its item instances and scroll position, and only changed cards are patched.
+Replies from the Go helper are read in bounded chunks and parsed away from
+the UI thread. Thumbnail browsing uses local attachments only; full preview,
+copy and export remain the actions that can download an attachment.
+
+Resize the panel from its top grip or use **General → Panel height**. Height
+is saved, clamped to the screen work area and always anchored above the
+taskbar. The app consistently uses a light palette, including native chrome.
+
+Settings use six toolbar categories and grouped forms, matching the Mac
+structure, with devices/revocation, sign-in events, QR/manual authorization,
+recovery files, server-verified membership, retention and attachment cleanup.
+You may open settings with `Clipper.exe --settings`, including before sign-in.
+Closing settings or the panel keeps the application resident. **Quit Clipper**
+is the explicit exit action. CI exercises these paths with Windows UI
+automation in a fresh hosted profile; never run its UI test script against
+a personal vault.
