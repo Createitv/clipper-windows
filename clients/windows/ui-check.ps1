@@ -78,6 +78,7 @@ try {
 } finally {
     $log=Join-Path $env:LOCALAPPDATA 'ClipWeave/ui-errors.log'
     if(Test-Path $log){Get-Content $log | Write-Output;Copy-Item $log (Join-Path $OutputDirectory "ui-errors.log") -Force}
+    $startup=Join-Path $env:LOCALAPPDATA "ClipWeave/ui-startup.log";if(Test-Path $startup){Get-Content $startup | Write-Output;Copy-Item $startup (Join-Path $OutputDirectory "ui-startup.log") -Force}
     try{Get-WinEvent -FilterHashtable @{LogName="Application";StartTime=(Get-Date).AddMinutes(-5)} -ErrorAction Stop | Where-Object {$_.ProviderName -match "Application Error|.NET Runtime|Windows Error Reporting" -and $_.Message -match "Clipper"} | Select-Object -First 6 TimeCreated,ProviderName,Message | Format-List | Out-File (Join-Path $OutputDirectory "crash-events.txt") -Encoding utf8}catch{}
     $gui.Refresh();if(-not $gui.HasExited){Stop-Process -Id $gui.Id -Force}
     Get-Process -Name 'clipweave-core' -ErrorAction SilentlyContinue | Stop-Process -Force

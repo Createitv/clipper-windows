@@ -32,7 +32,8 @@ public sealed partial class MainWindow {
     readonly SemaphoreSlim thumbnailWork=new(1,1);
     int thumbnailEpoch;
     readonly Dictionary<string,WeakReference<Image>> thumbnailTargets=new();
-    readonly ProgressRing syncProgress=new(){Width=24,Height=24,IsActive=false,Visibility=Visibility.Collapsed};
+    readonly ProgressRing syncProgress=CreateSyncProgress();
+    static ProgressRing CreateSyncProgress(){UiDiagnostics.Stage("before-sync-progress-control");var result=new ProgressRing{Width=24,Height=24,IsActive=false,Visibility=Visibility.Collapsed};UiDiagnostics.Stage("after-sync-progress-control");return result;}
     string renderedGroups="";
     string historySignature="";
     string selectedClipId="";

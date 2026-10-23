@@ -35,7 +35,7 @@
     },
     {
       "path": "clients/windows/App.xaml.cs",
-      "sha256": "f7b8fb33516363b76bab9fcb56d5926d426ef9e907103db7f05c190c0780b58b"
+      "sha256": "ed7dc74c0ca763518aa559856e81f2bc6985366f959a9cbb5debc6294f433fd3"
     },
     {
       "path": "clients/windows/AuthorizationCode.cs",
@@ -67,7 +67,7 @@
     },
     {
       "path": "clients/windows/DailyFlows.cs",
-      "sha256": "bf3aa4377f99fa1e4d2de901e3913c85b908c8df396d1f56197dd7c7beb1f551"
+      "sha256": "a862854653e9ff1c62147aa4addafd3fca7bedc22a321a5aeb48d9ab7ea7b13f"
     },
     {
       "path": "clients/windows/DailyPresentation.cs",
@@ -103,11 +103,11 @@
     },
     {
       "path": "clients/windows/MainPanel.cs",
-      "sha256": "f2ad212e117aec0c6cf7680a65291ab854dc152fe168c78d246b4e2fa4fa9409"
+      "sha256": "a052689bef6a5e9c51ccf77e36e5753ba1c1ba4ac94992177a191c6278ab1d4c"
     },
     {
       "path": "clients/windows/MainWindow.cs",
-      "sha256": "16cee481fe7911c8355454472c95e168c9b45ff3d4a0e7b6b07e5a8367ea96bb"
+      "sha256": "95ff8c3068fe699690dbfc2b91f1f43e96ee8f4550797d152785b8727200f0a5"
     },
     {
       "path": "clients/windows/PendingSessionStore.cs",
@@ -119,11 +119,11 @@
     },
     {
       "path": "clients/windows/SettingsWindow.cs",
-      "sha256": "467a5ec451e40c3e503b2f4f132fb99f411fcf96b09158265fa58419c9e187b9"
+      "sha256": "8ac322d0b6f429f820fd10afb28fd3268d88fedfe9a4cf90900e08a40b3970ed"
     },
     {
       "path": "clients/windows/UiDiagnostics.cs",
-      "sha256": "9c8a299605aa1af63cbca40f56c75a01ad916c246083d8f111ac392281f4aca1"
+      "sha256": "fa248009f306b788cbb9516b914cf442663d06688a2c5e3509952f1a728341df"
     },
     {
       "path": "clients/windows/WindowAppearance.cs",
@@ -151,7 +151,7 @@
     },
     {
       "path": "clients/windows/ui-check.ps1",
-      "sha256": "14c57f9ee7be85e920e33f355fe08909d8ef79e37a4f406008756ade4717e463"
+      "sha256": "93eeedc7445a8ecf766df161a4f39949cf5ee9168f4511a47d6ab4171b9ab419"
     },
     {
       "path": "clients/windows-tests/LocalizationTests.csproj",

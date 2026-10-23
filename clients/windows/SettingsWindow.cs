@@ -30,13 +30,13 @@ sealed class SettingsWindow:Window {
     JsonObject Config=>owner.Status["config"] as JsonObject??new();
 
     public SettingsWindow(MainWindow owner){
-        this.owner=owner;Title=L10n.Text("设置")+" — Clipper";
+        UiDiagnostics.Stage("settings-constructor-entered");this.owner=owner;Title=L10n.Text("设置")+" — Clipper";
         root.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         root.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
         root.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         root.Children.Add(navigation);Grid.SetRow(pageHost,1);root.Children.Add(pageHost);
         notice.Margin=new Thickness(28,8,28,16);notice.Foreground=Palette.Muted;Grid.SetRow(notice,2);root.Children.Add(notice);
-        Content=root;WindowAppearance.Apply(this);Build();Select(0);UpdateState();
+        Content=root;WindowAppearance.Apply(this);UiDiagnostics.Stage("before-settings-build");Build();UiDiagnostics.Stage("after-settings-build");Select(0);UpdateState();
         WindowAppearance.SizeCentered(this,900,740,owner);
         owner.StateChanged+=UpdateState;
         Closed+=(_,_)=>{closed=true;owner.StateChanged-=UpdateState;owner.SettingsClosed();};

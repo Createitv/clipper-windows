@@ -13,7 +13,7 @@ static class WindowsIdentity {
 }
 public sealed partial class MainWindow {
     bool searchVisible;
-    internal void ChangeLanguage(string language){Preferences.Language=language;Preferences.Save();WindowsLanguage.Apply(language);DispatcherQueue.TryEnqueue(()=>{settingsWindow?.Close();previewWindow?.Close();if(loginWindow?.IsBusy!=true)loginWindow?.Close();historyItems.Clear();historySignature="";search.PlaceholderText=L10n.Text("搜索你的剪贴板");Render();Shell.RefreshLanguage();OpenSettings();});}
+    internal void ChangeLanguage(string language){UiDiagnostics.Stage("language-change-request");Preferences.Language=language;Preferences.Save();WindowsLanguage.Apply(language);DispatcherQueue.TryEnqueue(()=>{settingsWindow?.Close();previewWindow?.Close();if(loginWindow?.IsBusy!=true)loginWindow?.Close();historyItems.Clear();historySignature="";search.PlaceholderText=L10n.Text("搜索你的剪贴板");Render();Shell.RefreshLanguage();OpenSettings();});}
     void ToggleSearch(){searchVisible=!searchVisible;search.Visibility=searchVisible?Visibility.Visible:Visibility.Collapsed;if(searchVisible)search.Focus(FocusState.Programmatic);else search.Text="";}
     void RetryVisibleThumbnails(){foreach(var clip in visibleClips.Where(c=>ClipPresentation.Kind(c)=="image"&&!thumbnails.ContainsKey(Str(c,"id"))))if(thumbnailTargets.TryGetValue(Str(clip,"id"),out var weak)&&weak.TryGetTarget(out var target))_=LoadThumbnail(clip,target);}
     internal FrameworkElement DeviceCard(JsonObject device,bool request=false){

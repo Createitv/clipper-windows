@@ -50,9 +50,10 @@ public sealed partial class MainWindow : Window {
     internal Window DialogOwner=>loginWindow?.AppWindow.IsVisible==true?loginWindow:settingsWindow?.AppWindow.IsVisible==true?settingsWindow:previewWindow?.AppWindow.IsVisible==true?previewWindow:this;
     internal XamlRoot DialogRoot=>((FrameworkElement)DialogOwner.Content).XamlRoot;
     public MainWindow() {
+        UiDiagnostics.Stage("main-constructor-entered");
         Title="Clipper"; viewport.Content=body;
         shellRoot.Children.Add(new Border{Background=Palette.White,BorderBrush=Palette.Border,BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(20),Child=viewport});Content=shellRoot;
-        Shell=new WindowsShell(this);
+        Shell=new WindowsShell(this);UiDiagnostics.Stage("after-shell-initialize");
         refreshTimer=DispatcherQueue.CreateTimer();refreshTimer.Interval=TimeSpan.FromSeconds(2);
         refreshTimer.Tick+=async(_,_)=>{if(!busy&&!closed)await Run(Refresh);};refreshTimer.Start();
         Closed+=async(_,_)=>{closed=true;refreshTimer.Stop();Shell.Dispose();speaker.Dispose();settingsWindow?.Close();loginWindow?.Close();previewWindow?.Close();ClearPreviews();await core.DisposeAsync();};
