@@ -4,6 +4,7 @@ using WinRT.Interop;
 namespace ClipWeave;
 static class WindowAppearance {
     public static void Apply(Window window){
+        window.AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory,"Assets","cliper-tray-black.ico"));
         if(window.Content is FrameworkElement root)root.RequestedTheme=ElementTheme.Light;
         var disabled=0;var hwnd=WindowNative.GetWindowHandle(window);
         // Keep native chrome light even when Windows itself uses dark mode.

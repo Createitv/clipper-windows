@@ -103,7 +103,7 @@
     },
     {
       "path": "clients/windows/SettingsWindow.cs",
-      "sha256": "7269c1b6ed8eb8932ba76c631c1b8a47af239f7ccb2846e1bcd519b96761bece"
+      "sha256": "2b80c9b68140ac994e0e0c27023267f45be9dbfecd065966a06d945a5f05d8a4"
     },
     {
       "path": "clients/windows/UiDiagnostics.cs",
@@ -111,7 +111,7 @@
     },
     {
       "path": "clients/windows/WindowAppearance.cs",
-      "sha256": "f181c54eac119bcac4f9edc9c89902d5c47e80daad66915be86964fb73c944c9"
+      "sha256": "da63a6a97505f789f245aaa5ec08fdf6f8c1f705a3039c429005b78464e92e51"
     },
     {
       "path": "clients/windows/WindowsPreferences.cs",
@@ -135,7 +135,7 @@
     },
     {
       "path": "clients/windows/ui-check.ps1",
-      "sha256": "c22cdd196fa0cc8b36820b4fe6a649344e099a5bbeb957b75ede4b6213086946"
+      "sha256": "d6d99a1c3dd7674b3eedd82e32cfa9ae10d19d75704f334f7e52fc748973569c"
     },
     {
       "path": "native/bridge/client.go",

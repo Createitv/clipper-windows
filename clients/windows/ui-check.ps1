@@ -8,7 +8,7 @@ Add-Type @'
 using System;
 using System.Runtime.InteropServices;
 public static class ClipperUiNative {
- [DllImport("user32.dll",CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string className,string windowName);
+ [DllImport("user32.dll",CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(IntPtr className,string windowName);
  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hwnd,out uint processId);
  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hwnd,uint message,IntPtr wparam,IntPtr lparam);
 }
@@ -57,7 +57,7 @@ try {
     if($slider.Current.Value -ne 520){throw 'Panel height control did not retain value'}
     [ClipperUiNative]::PostMessage([IntPtr]$window.Current.NativeWindowHandle,0x0010,[IntPtr]::Zero,[IntPtr]::Zero) | Out-Null
     Start-Sleep -Seconds 3;$gui.Refresh();if($gui.HasExited){throw 'Closing settings terminated the resident app'}
-    $main=[ClipperUiNative]::FindWindow($null,'Clipper');[uint32]$mainPid=0
+    $main=[ClipperUiNative]::FindWindow([IntPtr]::Zero,'Clipper');[uint32]$mainPid=0
     if($main -eq [IntPtr]::Zero){throw 'Resident main window was destroyed'}
     [ClipperUiNative]::GetWindowThreadProcessId($main,[ref]$mainPid) | Out-Null
     if($mainPid -ne $gui.Id){throw 'Unexpected resident window owner'}

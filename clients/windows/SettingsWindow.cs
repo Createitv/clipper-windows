@@ -36,7 +36,7 @@ sealed class SettingsWindow:Window {
         Closed+=(_,_)=>{closed=true;owner.StateChanged-=UpdateState;owner.SettingsClosed();};
         root.KeyDown+=(_,e)=>{if(e.Key==Windows.System.VirtualKey.Escape){Close();e.Handled=true;}};
     }
-    StackPanel Page(string title){var p=new StackPanel{Spacing=22,Padding=new Thickness(26,24,26,20),MaxWidth=800,HorizontalAlignment=HorizontalAlignment.Stretch};p.Children.Add(Palette.Text(L10n.Text(title),23,true));return p;}
+    StackPanel Page(string title){var p=new StackPanel{Spacing=22,Padding=new Thickness(26,24,26,20),Width=800,MaxWidth=800,HorizontalAlignment=HorizontalAlignment.Center};p.Children.Add(Palette.Text(L10n.Text(title),23,true));return p;}
     StackPanel Section(StackPanel page,string title,string detail=""){
         var group=new StackPanel{Spacing=12};group.Children.Add(Palette.Text(L10n.Text(title),13,true));
         var content=new StackPanel{Spacing=15};group.Children.Add(new Border{Background=Palette.White,CornerRadius=new CornerRadius(12),Padding=new Thickness(18),Child=content});page.Children.Add(group);
@@ -45,7 +45,7 @@ sealed class SettingsWindow:Window {
     static void Help(StackPanel parent,string key){var text=Palette.Text(L10n.Text(key),12);text.Foreground=Palette.Muted;parent.Children.Add(text);}
     static void Row(StackPanel parent,string key,TextBlock value){var row=new Grid{ColumnSpacing=18};row.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});row.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});row.Children.Add(Palette.Text(L10n.Text(key)));value.HorizontalAlignment=HorizontalAlignment.Right;value.TextWrapping=TextWrapping.Wrap;Grid.SetColumn(value,1);row.Children.Add(value);parent.Children.Add(row);}
     void Tab(string key,string title,string glyph,StackPanel page){
-        var index=pages.Count;pages.Add(new ScrollViewer{Content=page,HorizontalContentAlignment=HorizontalAlignment.Stretch,VerticalContentAlignment=VerticalAlignment.Top,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled});
+        var index=pages.Count;var scroll=new ScrollViewer{Content=page,HorizontalContentAlignment=HorizontalAlignment.Center,VerticalContentAlignment=VerticalAlignment.Top,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};scroll.SizeChanged+=(_,e)=>page.Width=Math.Max(1,Math.Min(800,e.NewSize.Width));pages.Add(scroll);
         navigation.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
         var label=new StackPanel{Spacing=6,HorizontalAlignment=HorizontalAlignment.Center};label.Children.Add(new FontIcon{Glyph=glyph,FontSize=19});var text=Palette.Text(L10n.Text(title),11);text.TextAlignment=TextAlignment.Center;text.MaxLines=2;label.Children.Add(text);
         var button=new Button{Content=label,Background=Palette.White,BorderThickness=new Thickness(0),CornerRadius=new CornerRadius(9),HorizontalAlignment=HorizontalAlignment.Stretch,HorizontalContentAlignment=HorizontalAlignment.Center,MinHeight=66,Padding=new Thickness(6)};
