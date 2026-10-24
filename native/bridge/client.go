@@ -4,6 +4,7 @@ package bridge
 
 import (
 	"clipweave.local/device/core"
+	"clipweave.local/device/preview"
 	syncer "clipweave.local/device/sync"
 	"context"
 	"encoding/base64"
@@ -437,7 +438,7 @@ func (c *Client) dispatch(ctx context.Context, r request) (any, error) {
 		result := core.Object{"bytes": base64.StdEncoding.EncodeToString(data), "type": clip["type"], "name": clip["name"]}
 		clear(data)
 		return result, nil
-	case "preview":
+	case "preview", "documentPreview":
 		clip, err := c.vault.Find(r.ClipID)
 		if err != nil {
 			return nil, err
@@ -452,6 +453,14 @@ func (c *Client) dispatch(ctx context.Context, r request) (any, error) {
 				return nil, err
 			}
 			result["bytes"] = base64.StdEncoding.EncodeToString(b)
+			if r.Action == "documentPreview" {
+				document, previewErr := preview.Document(value(clip["name"]), b)
+				if previewErr != nil {
+					result["documentError"] = previewErr.Error()
+				} else {
+					result["document"] = document
+				}
+			}
 			clear(b)
 		}
 		return result, nil

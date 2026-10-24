@@ -1458,6 +1458,10 @@ static partial class L10n {
         ["Plus · 推荐"] = "Plus · Recommended",
         ["更多空间"] = "More storage",
         ["规划中 · 尚未实现"] = "Planned · Not available",
+        ["只读（Mac）"] = "Read only (Mac)",
+        ["读写与整理（Mac）"] = "Read/write & organize (Mac)",
+        ["Agent 需 macOS 直接下载版运行并授权；删除逐次确认。"] = "Agent requires the running direct-download macOS app and separate consent; approve every deletion.",
+
         ["左右滑动对比套餐"] = "Swipe to compare plans",
         ["新账户即享 3 天 Pro，无需付款，到期自动回到 Free。"] = "New accounts get 3 days of Pro. No payment required. Returns to Free automatically.",
         ["正在体验 Pro，到期自动回到 Free，不会扣款。"] = "You’re trying Pro. Returns to Free when the trial ends. No charge.",
@@ -1564,6 +1568,16 @@ static partial class L10n {
         ["未保存内容不会加入资料库。"] = "Unsaved content will not be added to your library.",
         ["待处理会话无法恢复，请重新验证邮箱。"] = "Your pending session could not be restored. Verify your email again.",
         ["以账户权益为准"] = "See account entitlement",
-        ["套餐供应和价格以当前线上目录为准；权益以服务端账户信息为准。"] = "Plans and pricing follow the current online catalogue. Your server account determines access."
+        ["套餐供应和价格以当前线上目录为准；权益以服务端账户信息为准。"] = "Plans and pricing follow the current online catalogue. Your server account determines access.",
+        ["上一页"] = "Previous page",
+        ["下一页"] = "Next page",
+        ["搜索全文"] = "Search full text",
+        ["查找下一个"] = "Find next",
+        ["文本预览（不保留原版式）"] = "Text preview (original layout is not preserved)",
+        ["PDF 无法打开；如已加密，请输入密码重试。"] = "Cannot open PDF. If encrypted, enter its password and retry.",
+        ["此文件暂不支持完整预览。"] = "Full preview is unavailable for this format.",
+        ["正在加载预览…"] = "Loading preview\u2026",
+        ["网页预览"] = "Web preview",
+        ["原文"] = "Original text",
     };
 }

@@ -80,7 +80,7 @@ public sealed partial class MainWindow {
         var footer=new Grid{Padding=new Thickness(22,10,22,10),ColumnSpacing=14,BorderBrush=Palette.Border,BorderThickness=new Thickness(0,1,0,0)};foreach(var width in new[]{GridLength.Auto,new GridLength(1,GridUnitType.Star),GridLength.Auto})footer.ColumnDefinitions.Add(new ColumnDefinition{Width=width});Grid.SetRow(footer,3);body.Children.Add(footer);
         footer.Children.Add(countLabel);Grid.SetColumn(state,1);state.FontSize=11;state.Foreground=Palette.Muted;state.TextTrimming=TextTrimming.CharacterEllipsis;state.MaxLines=1;footer.Children.Add(state);
         var keys=Palette.Text(L10n.Text("← → 选择   空格预览   Enter 复制   Esc 收起"),11);keys.Foreground=Palette.Muted;Grid.SetColumn(keys,2);footer.Children.Add(keys);
-        body.KeyDown-=PanelKeyDown;body.KeyDown+=PanelKeyDown;
+        body.RemoveHandler(UIElement.KeyDownEvent,new KeyRoutedEventHandler(PanelKeyDown));body.AddHandler(UIElement.KeyDownEvent,new KeyRoutedEventHandler(PanelKeyDown),true);
         historySignature="";RenderHistory();UpdateSyncIndicator();
     }
     void UpdateGroups(){
@@ -164,7 +164,7 @@ public sealed partial class MainWindow {
     void PanelKeyDown(object sender,KeyRoutedEventArgs e) {
         if(e.Key==VirtualKey.Escape){if(previewWindow!=null)previewWindow.Close();else if(search.Visibility==Visibility.Visible)ToggleSearch();else Shell.HidePanel(true);e.Handled=true;return;}
         if(WindowsShell.ControlDown&&e.Key>=VirtualKey.Number1&&e.Key<=VirtualKey.Number9){var i=(int)e.Key-(int)VirtualKey.Number1;if(i<visibleClips.Count)_=Run(()=>CopyClip(visibleClips[i]));e.Handled=true;return;}
-        if(FocusManager.GetFocusedElement(body.XamlRoot) is TextBox or PasswordBox or RichEditBox)return;
+        if(FocusManager.GetFocusedElement(body.XamlRoot) is TextBox or PasswordBox or RichEditBox or Microsoft.UI.Xaml.Controls.Primitives.ButtonBase)return;
         if(e.Key is VirtualKey.Left or VirtualKey.Right){history.SelectedIndex=Math.Clamp(history.SelectedIndex+(e.Key==VirtualKey.Right?1:-1),0,Math.Max(0,visibleClips.Count-1));if(history.SelectedItem!=null)history.ScrollIntoView(history.SelectedItem);e.Handled=true;}
         if(history.SelectedItem is JsonObject clip&&e.Key is VirtualKey.Enter or VirtualKey.Space){_=Run(()=>e.Key==VirtualKey.Enter?CopyClip(clip):PreviewClip(clip));e.Handled=true;}
     }

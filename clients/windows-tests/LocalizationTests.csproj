@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup><Compile Include="../windows/Localization.cs" Link="Localization.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../windows/Localization.cs" Link="Localization.cs" /><Compile Include="../windows/PreviewText.cs" Link="PreviewText.cs" /></ItemGroup>
   <ItemGroup>
     <Compile Include="../windows/AuthorizationCode.cs" Link="AuthorizationCode.cs" />
     <Compile Include="../windows/ClipPresentation.cs" Link="ClipPresentation.cs" />

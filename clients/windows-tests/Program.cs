@@ -99,6 +99,16 @@ Console.WriteLine("Encrypted pending-session restart/size/clear and safe bilingu
 var recoveryDirectory=Path.Combine(testRoot,"windows-restoration-test-"+Guid.NewGuid());Directory.CreateDirectory(recoveryDirectory);
 try{var store=new ClipWeave.PendingSessionStore(recoveryDirectory);store.Write("old-encrypted-envelope");var recovery=new ClipWeave.SessionRestoration(store);int attempts=0;await recovery.Ensure(_=>{attempts++;throw new IOException("invalid key");});await recovery.Ensure(_=>{attempts++;return Task.CompletedTask;});if(!recovery.Failed||attempts!=1||store.Read()!=""||Directory.GetFiles(recoveryDirectory).Length!=1)throw new Exception("Bad pending sessions must be retained but must not block fresh authentication");}finally{Directory.Delete(recoveryDirectory,true);}
 Console.WriteLine("Corrupt-session quarantine retains encrypted data and does not repeatedly block reauthentication");
+// Long previews are complete and page boundaries never split an emoji.
+var previewOriginal=new string('汉',15999)+"🌍"+new string('x',90000)+"LAST-LINE";
+var previewPages=new ClipWeave.PreviewText(previewOriginal);
+Equal(string.Concat(Enumerable.Range(0,previewPages.Count).Select(previewPages.Page)),previewOriginal);
+for(var i=0;i<previewPages.Count;i++){var page=previewPages.Page(i);if(page.Length>0&&(char.IsLowSurrogate(page[0])||char.IsHighSurrogate(page[^1])))throw new Exception("Preview split a surrogate pair");}
+var last=previewPages.Find("LAST-LINE",0);if(last<0||!previewPages.Page(previewPages.PageAt(last)).Contains("LAST-LINE"))throw new Exception("Preview cannot reach the final page");
+Equal(ClipWeave.PreviewText.Content(new(){["text"]="long text https://example.com END"}),"long text https://example.com END");
+Equal(ClipWeave.PreviewText.Content(new(){["document"]=new System.Text.Json.Nodes.JsonObject{["text"]="Office content"}}),"Office content");
+Console.WriteLine("Full text pagination, Unicode boundaries, final-page search and original URL text preview passed");
+
 sealed class CountingStream(string content):MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)){
     public int ReadCalls;
     public override ValueTask<int> ReadAsync(Memory<byte> buffer,CancellationToken token=default){ReadCalls++;return base.ReadAsync(buffer,token);}

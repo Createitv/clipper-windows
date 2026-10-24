@@ -42,7 +42,6 @@ public sealed partial class MainWindow {
         await Shell.PasteToPreviousAsync((status["config"] as JsonObject)?["directPaste"]?.GetValue<bool>()==true);
     }
     async Task PreviewClip(JsonObject clip) {
-        var content=await core.Call("preview",new(){["clipId"]=Str(clip,"id")}) as JsonObject??new();
         previewWindow?.Close();var window=new Window{Title=L10n.Text("内容预览")+" — Clipper"};previewWindow=window;
         var root=new Grid{Background=Palette.White};root.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});root.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
         var bar=new Grid{Padding=new Thickness(16),ColumnSpacing=14};bar.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});bar.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});
@@ -52,21 +51,28 @@ public sealed partial class MainWindow {
         actions.Children.Add(Palette.Icon("\uE8C8","复制",()=>_=Run(()=>CopyClip(clip))));actions.Children.Add(Palette.Icon("\uE72D","分享",()=>_=Run(()=>ShareClip(clip))));
         var more=Palette.Icon("\uE712","更多",()=>{});var moreMenu=new MenuFlyout();MenuItem(moreMenu,L10n.Text("所属分组")+" · "+Str(clip,"group",L10n.Text("未分组")),()=>_=Run(()=>MoveClip(clip)));MenuItem(moreMenu,"导出…",()=>_=Run(()=>ExportClip(clip)));MenuItem(moreMenu,"删除…",()=>_=Run(async()=>{await DeleteClip(clip);if(!clips.Any(c=>Str(c,"id")==Str(clip,"id")))window.Close();}));more.Flyout=moreMenu;actions.Children.Add(more);
         actions.Children.Add(Palette.Icon("\uE711","关闭",window.Close));root.Children.Add(bar);
-        if(ClipPresentation.Link(clip) is Uri uri) {
-            var container=new Grid();container.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});container.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
-            var open=new Button{Content=uri.Host+" · "+L10n.Text("在默认浏览器中打开"),Margin=new Thickness(20,0,20,12)};open.Click+=async(_,_)=>await Windows.System.Launcher.LaunchUriAsync(uri);container.Children.Add(open);
-            var browser=new WebView2();Grid.SetRow(browser,1);container.Children.Add(browser);Grid.SetRow(container,1);root.Children.Add(container);
-            browser.Loaded+=async(_,_)=>{try{await browser.EnsureCoreWebView2Async();browser.CoreWebView2.Settings.IsWebMessageEnabled=false;browser.CoreWebView2.NewWindowRequested+=async(_,e)=>{e.Handled=true;if(Uri.TryCreate(e.Uri,UriKind.Absolute,out var target)&&target.Scheme is "http" or "https")await Windows.System.Launcher.LaunchUriAsync(target);};browser.Source=uri;}catch{container.Children.Remove(browser);var fallback=Palette.Text(L10n.Text("网页预览暂不可用，请使用默认浏览器打开。"));fallback.Margin=new Thickness(20);Grid.SetRow(fallback,1);container.Children.Add(fallback);}};
-            window.Closed+=(_,_)=>browser.Close();
-        } else if(content["bytes"]!=null&&ClipPresentation.Kind(clip)=="image") {
-            var image=new Image{Source=await DecodeImage(Convert.FromBase64String(Str(content,"bytes"))),Stretch=Stretch.Uniform,Margin=new Thickness(20)};var imagePanel=new Grid();imagePanel.Children.Add(image);var expand=Palette.Icon("\uE740","打开完整图片",()=>_=Run(()=>OpenFullImage(clip)));expand.HorizontalAlignment=HorizontalAlignment.Right;expand.VerticalAlignment=VerticalAlignment.Bottom;expand.Margin=new Thickness(24);imagePanel.Children.Add(expand);Grid.SetRow(imagePanel,1);root.Children.Add(imagePanel);
-        } else if(content["text"]!=null) {
-            var text=new TextBox{Text=Str(content,"text"),IsReadOnly=true,AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(20),BorderThickness=new Thickness(0),Background=Palette.White};if(ClipPresentation.Kind(clip)=="code")text.FontFamily=new FontFamily("Consolas");Grid.SetRow(text,1);root.Children.Add(text);
-        } else {
-            var summary=new StackPanel{Spacing=18,Margin=new Thickness(40)};summary.Children.Add(Palette.Text(Str(clip,"name",Str(clip,"title")),20,true));summary.Children.Add(Palette.Text(ClipPresentation.Size(clip)));if(ClipPresentation.Kind(clip)=="folder"||new[]{".png",".jpg",".jpeg",".gif",".webp",".bmp",".pdf",".txt",".md",".mp3",".mp4",".wav",".mov"}.Contains(Path.GetExtension(SafeName(clip)).ToLowerInvariant()))summary.Children.Add(Button(L10n.Text("打开附件"),async()=>{var path=await ExportTemporary(clip);if(File.Exists(path))await Windows.System.Launcher.LaunchFileAsync(await StorageFile.GetFileFromPathAsync(path));else await Windows.System.Launcher.LaunchFolderAsync(await StorageFolder.GetFolderFromPathAsync(path));}));summary.Children.Add(Button(L10n.Text("导出…"),()=>ExportClip(clip)));Grid.SetRow(summary,1);root.Children.Add(summary);
+        var reader=new DocumentPreview();Grid.SetRow(reader,1);root.Children.Add(reader);
+        reader.ShowText(L10n.Text("正在加载预览…"));
+        WebView2? browser=null;
+        if(ClipPresentation.Link(clip) is Uri uri){
+            var web=new Button{Content=L10n.Text("网页预览")};actions.Children.Insert(0,web);
+            web.Click+=async(_,_)=>{
+                if(browser!=null){browser.Close();root.Children.Remove(browser);browser=null;reader.Visibility=Visibility.Visible;web.Content=L10n.Text("网页预览");return;}
+                browser=new WebView2();var current=browser;Grid.SetRow(current,1);root.Children.Add(current);reader.Visibility=Visibility.Collapsed;web.Content=L10n.Text("原文");
+                try{await current.EnsureCoreWebView2Async();if(previewWindow!=window)return;current.CoreWebView2.Settings.IsWebMessageEnabled=false;current.CoreWebView2.NewWindowRequested+=(_,e)=>{e.Handled=true;if(Uri.TryCreate(e.Uri,UriKind.Absolute,out var target)&&target.Scheme is "http" or "https")current.Source=target;};current.CoreWebView2.DownloadStarting+=(_,e)=>e.Cancel=true;current.Source=uri;}
+                catch{current.Close();root.Children.Remove(current);browser=null;reader.Visibility=Visibility.Visible;web.Content=L10n.Text("网页预览");}
+            };
         }
-        root.KeyDown+=(_,e)=>{if(e.Key==Windows.System.VirtualKey.Escape){window.Close();e.Handled=true;}};window.Content=root;WindowAppearance.Apply(window);window.AppWindow.Resize(new Windows.Graphics.SizeInt32(800,600));window.CenterOnScreen();window.Closed+=(_,_)=>{if(previewWindow==window)previewWindow=null;};window.Activate();Shell.HidePanel();
+        root.AddHandler(UIElement.KeyDownEvent,new Microsoft.UI.Xaml.Input.KeyEventHandler((_,e)=>{
+            var editing=Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(root.XamlRoot) is TextBox {IsReadOnly:false} or PasswordBox;
+            if(e.Key==Windows.System.VirtualKey.Escape||e.Key==Windows.System.VirtualKey.Space&&!editing){window.Close();e.Handled=true;}
+        }),true);
+        window.Content=root;WindowAppearance.Apply(window);window.AppWindow.Resize(new Windows.Graphics.SizeInt32(1000,720));window.CenterOnScreen();
+        window.Closed+=(_,_)=>{browser?.Close();reader.Dispose();if(previewWindow==window)previewWindow=null;};window.Activate();Shell.HidePanel();
+        try{var content=await core.Call("documentPreview",new(){["clipId"]=Str(clip,"id")}) as JsonObject??new();if(previewWindow==window&&AccountReady)await reader.Show(content,SafeName(clip));}
+        catch(Exception error){if(previewWindow==window)reader.ShowText(L10n.Error(error.Message));}
     }
+
     async Task ExportClip(JsonObject clip) {
         var picker=new Windows.Storage.Pickers.FolderPicker();picker.FileTypeFilter.Add("*");WinRT.Interop.InitializeWithWindow.Initialize(picker,WinRT.Interop.WindowNative.GetWindowHandle(DialogOwner));var folder=await picker.PickSingleFolderAsync();if(folder==null)return;
         var path=Path.Combine(folder.Path,SafeName(clip));if((File.Exists(path)||Directory.Exists(path))&&await Dialog(L10n.Text("目标已存在"),Palette.Text(L10n.Text("导出将覆盖同名内容，是否继续？")),L10n.Text("覆盖"))!=ContentDialogResult.Primary)return;
