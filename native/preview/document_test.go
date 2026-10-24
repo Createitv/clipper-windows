@@ -72,3 +72,10 @@ func TestExpansionLimit(t *testing.T) {
 		t.Fatal("zip expansion limit bypassed")
 	}
 }
+
+func TestGB18030(t *testing.T) {
+	r, e := Document("中文.txt", []byte{0xd6, 0xd0, 0xce, 0xc4})
+	if e != nil || r.Text != "中文" {
+		t.Fatal(r, e)
+	}
+}
