@@ -65,7 +65,7 @@ public sealed partial class MainWindow {
         }
         root.AddHandler(UIElement.KeyDownEvent,new Microsoft.UI.Xaml.Input.KeyEventHandler((_,e)=>{
             var editing=Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(root.XamlRoot) is TextBox {IsReadOnly:false} or PasswordBox;
-            if(e.Key==Windows.System.VirtualKey.Escape||e.Key==Windows.System.VirtualKey.Space&&!editing){window.Close();e.Handled=true;}
+            if(e.Key==Windows.System.VirtualKey.Escape||e.Key==Windows.System.VirtualKey.Space&&!editing&&browser==null){window.Close();e.Handled=true;}
         }),true);
         window.Content=root;WindowAppearance.Apply(window);window.AppWindow.Resize(new Windows.Graphics.SizeInt32(1000,720));window.CenterOnScreen();
         window.Closed+=(_,_)=>{browser?.Close();reader.Dispose();if(previewWindow==window)previewWindow=null;};window.Activate();Shell.HidePanel();

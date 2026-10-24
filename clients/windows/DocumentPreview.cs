@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Windows.Storage.Streams;
 using Windows.Data.Pdf;
-using Windows.UI.Text;
+using Microsoft.UI.Text;
 
 namespace ClipWeave;
 
@@ -42,7 +42,7 @@ sealed class DocumentPreview : Grid, IDisposable {
     }
     async Task<InMemoryRandomAccessStream> Stream(byte[] bytes){var stream=new InMemoryRandomAccessStream();using(var writer=new DataWriter(stream)){writer.WriteBytes(bytes);await writer.StoreAsync();writer.DetachStream();}stream.Seek(0);return stream;}
     public async Task Show(JsonObject content,string name){
-        if(PreviewText.HasOriginalText(content)){ShowText(PreviewText.Content(content));return;}
+        if(PreviewText.HasOriginalText(content)){ShowText(PreviewText.Content(content),content["type"]?.ToString()=="code");return;}
         if(content["document"]?["text"] is JsonValue value){ShowText(value.GetValue<string>(),true,content["document"]?["kind"]?.ToString()=="document");return;}
         byte[] bytes=content["bytes"] is JsonValue raw?Convert.FromBase64String(raw.GetValue<string>()):Array.Empty<byte>();
         var kind=content["document"]?["kind"]?.ToString()??"unsupported";
@@ -80,6 +80,6 @@ sealed class DocumentPreview : Grid, IDisposable {
         var jump=new NumberBox{Value=1,Minimum=1,Maximum=doc.PageCount,Width=95,SpinButtonPlacementMode=NumberBoxSpinButtonPlacementMode.Inline};
         var status=new TextBlock{VerticalAlignment=VerticalAlignment.Center};
         async Task Render(int requested){if(rendering||disposed||doc.PageCount==0)return;rendering=true;try{index=Math.Clamp(requested,0,(int)doc.PageCount-1);using var page=doc.GetPage((uint)index);using var stream=new InMemoryRandomAccessStream();var scale=Math.Min(1600/Math.Max(1,page.Size.Width),2400/Math.Max(1,page.Size.Height));await page.RenderToStreamAsync(stream,new PdfPageRenderOptions{DestinationWidth=(uint)Math.Max(1,page.Size.Width*scale),DestinationHeight=(uint)Math.Max(1,page.Size.Height*scale)});stream.Seek(0);var bitmap=new BitmapImage();await bitmap.SetSourceAsync(stream);if(!disposed){image.Source=bitmap;status.Text=$"{index+1} / {doc.PageCount}";jump.Value=index+1;}}catch{status.Text=L10n.Text("预览不可用");}finally{rendering=false;}}
-        bar.Children.Add(Command("上一页",()=>_=Render(index-1)));bar.Children.Add(jump);bar.Children.Add(status);bar.Children.Add(Command("下一页",()=>_=Render(index+1)));jump.ValueChanged+=(_,e)=>{if(double.IsFinite(e.NewValue))_=Render((int)e.NewValue-1);};Children.Add(bar);_=Render(0);
+        bar.Children.Add(Command("上一页",()=>_=Render(index-1)));bar.Children.Add(jump);bar.Children.Add(status);bar.Children.Add(Command("下一页",()=>_=Render(index+1)));jump.ValueChanged+=(sender,e)=>{if(double.IsFinite(e.NewValue))_=Render((int)e.NewValue-1);};Children.Add(bar);_=Render(0);
     }
 }

@@ -80,7 +80,7 @@ public sealed partial class MainWindow {
         var footer=new Grid{Padding=new Thickness(22,10,22,10),ColumnSpacing=14,BorderBrush=Palette.Border,BorderThickness=new Thickness(0,1,0,0)};foreach(var width in new[]{GridLength.Auto,new GridLength(1,GridUnitType.Star),GridLength.Auto})footer.ColumnDefinitions.Add(new ColumnDefinition{Width=width});Grid.SetRow(footer,3);body.Children.Add(footer);
         footer.Children.Add(countLabel);Grid.SetColumn(state,1);state.FontSize=11;state.Foreground=Palette.Muted;state.TextTrimming=TextTrimming.CharacterEllipsis;state.MaxLines=1;footer.Children.Add(state);
         var keys=Palette.Text(L10n.Text("← → 选择   空格预览   Enter 复制   Esc 收起"),11);keys.Foreground=Palette.Muted;Grid.SetColumn(keys,2);footer.Children.Add(keys);
-        body.RemoveHandler(UIElement.KeyDownEvent,new KeyRoutedEventHandler(PanelKeyDown));body.AddHandler(UIElement.KeyDownEvent,new KeyRoutedEventHandler(PanelKeyDown),true);
+        body.RemoveHandler(UIElement.KeyDownEvent,new KeyEventHandler(PanelKeyDown));body.AddHandler(UIElement.KeyDownEvent,new KeyEventHandler(PanelKeyDown),true);
         historySignature="";RenderHistory();UpdateSyncIndicator();
     }
     void UpdateGroups(){
